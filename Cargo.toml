@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/delimiter_soup",
     "tasks/circuit_math",
     "tasks/bungee_builder",
     "tasks/game_of_throwns",
