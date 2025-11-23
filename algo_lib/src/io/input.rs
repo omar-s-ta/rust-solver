@@ -197,6 +197,12 @@ impl<T: Readable> Readable for Vec<T> {
     }
 }
 
+impl Readable for String {
+    fn read(input: &mut Input) -> Self {
+        input.read_string()
+    }
+}
+
 macro_rules! read_integer {
     ($($t:ident)+) => {$(
         impl Readable for $t {
