@@ -10,6 +10,13 @@ use algo_lib::misc::test_type::TestType;
 
 type PreCalc = ();
 
+/**
+ * One of the rare problems where you need to think about
+ * which linear data-structure is suitable here.
+ * You want to avoid:
+ *   1. linear time string concatenation.
+ *   2. linear time list concatenation.
+ */
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_size();
     let strs = input.read_vec::<String>(n);
