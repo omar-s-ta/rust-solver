@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/join_strings",
     "tasks/delimiter_soup",
     "tasks/circuit_math",
     "tasks/bungee_builder",
