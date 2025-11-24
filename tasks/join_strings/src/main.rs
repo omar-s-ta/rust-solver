@@ -1,8 +1,9 @@
 //{"name":"Join Strings","group":"Kattis","url":"https://open.kattis.com/problems/joinstrings","interactive":false,"timeLimit":1000,"tests":[{"input":"4\ncute\ncat\nkattis\nis\n3 2\n4 1\n3 4\n","output":"kattiscatiscute\n"},{"input":"3\nhowis\nthis\npracticalexam\n1 2\n1 3\n","output":"howisthispracticalexam\n"}],"testType":"single","input":{"type":"stdin","fileName":null,"pattern":null},"output":{"type":"stdout","fileName":null,"pattern":null},"languages":{"java":{"taskClass":"JoinStrings"}}}
 
+use std::collections::LinkedList;
+
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
-use algo_lib::list::List;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
@@ -15,7 +16,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     let mut lists = Vec::new();
     for i in 0..n {
-        lists.push(List::with_elem(i));
+        lists.push(LinkedList::from([i]));
     }
 
     let mut at = 0;
