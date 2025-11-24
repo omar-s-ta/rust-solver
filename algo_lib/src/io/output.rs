@@ -46,6 +46,10 @@ impl<'s> Output<'s> {
         self.put(b'\n');
     }
 
+    pub fn print_empty_line(&mut self) {
+        self.put(b'\n');
+    }
+
     pub fn put(&mut self, b: u8) {
         self.buf[self.at] = b;
         self.at += 1;
