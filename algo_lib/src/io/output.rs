@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{collections::VecDeque, io::Write};
 
 pub struct Output<'s> {
     output: &'s mut dyn Write,
@@ -206,5 +206,18 @@ impl<T: Writable> Writable for Option<T> {
             None => (-1).write(output),
             Some(t) => t.write(output),
         }
+    }
+}
+
+impl<T: Writable> Writable for VecDeque<T> {
+    fn write(&self, output: &mut Output) {
+        '['.write(output);
+        (0..self.len()).for_each(|i| {
+            if i > 0 {
+                ','.write(output);
+            }
+            self[i].write(output);
+        });
+        ']'.write(output);
     }
 }
