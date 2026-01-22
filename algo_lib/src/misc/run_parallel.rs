@@ -13,7 +13,7 @@ pub fn run_parallel<P>(
     run: impl Fn(MutexGuard<Input>, &mut Output, usize, &P) + Send + Sync + 'static + Copy,
 ) -> bool
 where
-        for<'a> &'a P: Send,
+    for<'a> &'a P: Send,
 {
     let t = input.read_size();
     let tests_remaining = AtomicUsize::new(t);
