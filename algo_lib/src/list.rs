@@ -312,4 +312,3 @@ impl<T: Writable> Writable for List<T> {
         }
     }
 }
-
