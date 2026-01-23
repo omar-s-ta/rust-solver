@@ -4,3 +4,4 @@
 pub mod io;
 pub mod list;
 pub mod misc;
+pub mod teque;
