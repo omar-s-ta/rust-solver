@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/teque",
     "tasks/sim",
     "tasks/integer_lists",
     "tasks/join_strings",
