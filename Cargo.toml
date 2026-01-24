@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/numbers_on_atree",
     "tasks/teque",
     "tasks/sim",
     "tasks/integer_lists",
