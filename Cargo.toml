@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/juggling_patterns",
     "tasks/numbers_on_atree",
     "tasks/teque",
     "tasks/sim",
