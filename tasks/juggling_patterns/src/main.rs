@@ -16,6 +16,23 @@ type PreCalc = ();
 /// the 'hand' is determined by beat 'i' parity (i % 2).
 /// If two balls land on the same beat, they are automatically
 /// in the same hand for that beat.
+///
+///
+/// Proof:
+///   - if two beats i, j where i != j have the same remainder for some throw ti, tj:
+///     (i + ti) congurrent (j + tj) (mod n)
+///   - then for some integer 'k' -> i + ti = j + tj + kn
+///   - because pattern repeats every n, both throws land on the same beat in some cycle
+///     so two catches on one beat (invalid)
+///
+///   - Assume all remainders are distinct. Consider any two throws for any two cycles a, b:
+///     * throw i in cycle a lands at (i + ti + an)
+///     * throw j in cycle b lands at (j + tj + bn)
+///     * if they land on the same beat, then
+///     * i + ti + an = j + tj + bn
+///     * so, i + ti congurrent j + tj (mod n)
+///     * which contradicts distinct remainders.
+///     * therefore no beat ever has two catches.
 /// -------------------------------------------------------------
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let pattern = input.read_string();
