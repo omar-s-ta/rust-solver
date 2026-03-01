@@ -93,11 +93,7 @@ impl<'s> Input<'s> {
             }
             res.push(c);
         }
-        if res.is_empty() {
-            None
-        } else {
-            Some(res)
-        }
+        if res.is_empty() { None } else { Some(res) }
     }
 
     //noinspection RsSelfConvention
@@ -162,9 +158,12 @@ impl<'s> Input<'s> {
         self.get().unwrap().into()
     }
 
+    read_impl!(u16, read_ushort, read_ushort_vec);
     read_impl!(u32, read_unsigned, read_unsigned_vec);
     read_impl!(u64, read_u64, read_u64_vec);
     read_impl!(usize, read_size, read_size_vec, read_size_pair_vec);
+
+    read_impl!(i16, read_short, read_short_vec);
     read_impl!(i32, read_int, read_int_vec, read_int_pair_vec);
     read_impl!(i64, read_long, read_long_vec, read_long_pair_vec);
     read_impl!(i128, read_i128, read_i128_vec);
