@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/alphabet_spam",
     "tasks/c_d",
     "tasks/stock_prices",
     "tasks/knigs_of_the_forest",
