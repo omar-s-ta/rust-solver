@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/esej",
     "tasks/free_food",
     "tasks/bus_numbers",
     "tasks/booking_aroom",
