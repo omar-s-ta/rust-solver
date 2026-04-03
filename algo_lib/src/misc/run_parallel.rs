@@ -3,7 +3,7 @@ use crate::io::output::Output;
 use std::io::Write;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
-use std::thread::{available_parallelism, scope, yield_now, Builder};
+use std::thread::{Builder, available_parallelism, scope, yield_now};
 
 pub fn run_parallel<P>(
     mut input: Input,
@@ -75,6 +75,5 @@ where
             output.write_all(&res).unwrap();
         }
     });
-    let res = input.lock().unwrap().is_empty();
-    res
+    input.lock().unwrap().is_empty()
 }
