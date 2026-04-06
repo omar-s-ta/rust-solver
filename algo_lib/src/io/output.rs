@@ -83,6 +83,18 @@ impl<'s> Output<'s> {
         }
     }
 
+    pub fn print_iter_one_line<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
+        self.print_iter(iter);
+        self.put(b'\n');
+    }
+
+    pub fn print_iter_per_line<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
+        for e in iter {
+            e.write(self);
+            self.put(b'\n');
+        }
+    }
+
     pub fn print_iter_ref<'a, T: 'a + Writable, I: Iterator<Item = &'a T>>(&mut self, iter: I) {
         let mut first = true;
         for e in iter {
