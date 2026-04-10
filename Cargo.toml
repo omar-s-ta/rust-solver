@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/conformity",
     "tasks/competitive_arcade_basketball",
     "tasks/recount",
     "tasks/shiritori",
