@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "tasks/binary_search_tree",
     "tasks/b_asicinterpreter",
     "tasks/awkward_party",
     "tasks/adding_words",
