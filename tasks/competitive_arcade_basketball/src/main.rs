@@ -12,7 +12,7 @@ type PreCalc = ();
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_size();
-    let p = input.read_unsigned();
+    let p = input.read_u32();
     let m = input.read_size();
 
     let mut scores = (0..n)
@@ -22,7 +22,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let mut winners = Vec::new();
     for _ in 0..m {
         let player = input.read_string();
-        let points = input.read_unsigned();
+        let points = input.read_u32();
 
         if let Some(score) = scores.get_mut(&player) {
             *score += points;

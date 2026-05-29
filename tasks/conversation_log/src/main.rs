@@ -26,7 +26,7 @@ impl Value {
 
 /// Just use the words as the map keys
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let n = input.read_unsigned();
+    let n = input.read_u32();
 
     let mut map: BTreeMap<String, Value> = BTreeMap::new();
     let mut set: HashSet<String> = HashSet::new();

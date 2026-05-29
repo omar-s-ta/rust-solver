@@ -9,8 +9,8 @@ use algo_lib::misc::test_type::TestType;
 type PreCalc = ();
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let n = input.read_int();
-    let m = input.read_int();
+    let n = input.read_i32();
+    let m = input.read_i32();
 
     let mut actions = Vec::new();
     for _ in 0..m {

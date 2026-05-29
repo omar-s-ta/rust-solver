@@ -10,7 +10,7 @@ type PreCalc = ();
 
 fn _solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_size();
-    let heights = input.read_int_vec(n);
+    let heights = input.read_i32_vec(n);
 
     if n < 3 {
         out.print_line(0);
@@ -55,7 +55,7 @@ impl State {
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_size();
-    let heights = input.read_unsigned_vec(n);
+    let heights = input.read_u32_vec(n);
 
     if n < 3 {
         out.print_line(0);

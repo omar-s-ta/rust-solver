@@ -11,8 +11,8 @@ use algo_lib::misc::test_type::TestType;
 type PreCalc = bool;
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, input_ended: &mut PreCalc) {
-    let n = input.read_unsigned();
-    let m = input.read_unsigned();
+    let n = input.read_u32();
+    let m = input.read_u32();
 
     if n == 0 && m == 0 {
         *input_ended = true;
@@ -20,11 +20,11 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, input_ended: &m
     }
 
     let jack = (0..n).fold(HashSet::new(), |mut set, _| {
-        set.insert(input.read_unsigned());
+        set.insert(input.read_u32());
         set
     });
     let jill = (0..m).fold(HashSet::new(), |mut set, _| {
-        set.insert(input.read_unsigned());
+        set.insert(input.read_u32());
         set
     });
 

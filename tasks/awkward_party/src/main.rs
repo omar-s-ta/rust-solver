@@ -18,7 +18,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let mut awkwards = n;
 
     for i in 0..n {
-        let id = input.read_unsigned();
+        let id = input.read_u32();
         if let Some(old_at) = map.insert(id, i) {
             awkwards = awkwards.min(i - old_at);
         }

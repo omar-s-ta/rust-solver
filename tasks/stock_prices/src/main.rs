@@ -89,7 +89,7 @@ impl Stock {
 /// Just apply what the problem says. Use a data-structure where you can
 /// get the `min` and `max` value easily.
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let n = input.read_ushort();
+    let n = input.read_u16();
     let mut stock = Stock::new();
 
     for _ in 0..n {

@@ -29,7 +29,7 @@ const D: i64 = 2018;
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, offsets: &PreCalc) {
     let n = input.read_size();
     let set = input
-        .read_long_pair_vec(n)
+        .read_i64_pair_vec(n)
         .into_iter()
         .collect::<HashSet<_>>();
 

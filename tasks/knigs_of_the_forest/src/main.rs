@@ -18,8 +18,8 @@ struct Turn {
 
 impl Readable for Turn {
     fn read(input: &mut Input) -> Self {
-        let year = input.read_unsigned();
-        let power = input.read_unsigned();
+        let year = input.read_u32();
+        let power = input.read_u32();
         Turn { year, power }
     }
 }

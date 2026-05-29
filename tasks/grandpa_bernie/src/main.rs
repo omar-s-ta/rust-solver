@@ -11,17 +11,17 @@ use algo_lib::misc::test_type::TestType;
 type PreCalc = ();
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let n = input.read_unsigned();
+    let n = input.read_u32();
 
     let mut map: HashMap<String, Vec<u32>> = HashMap::new();
     for _ in 0..n {
         map.entry(input.read_string())
             .or_default()
-            .push(input.read_unsigned());
+            .push(input.read_u32());
     }
     map.values_mut().for_each(|v| v.sort_unstable());
 
-    let q = input.read_unsigned();
+    let q = input.read_u32();
     for _ in 0..q {
         out.print_line(map.get(&input.read_string()).unwrap()[input.read_size() - 1]);
     }

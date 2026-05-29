@@ -22,10 +22,10 @@ impl State {
     }
 
     fn insert(&mut self, name: &str, value: i32) {
-        if let Some(old) = self.value.insert(name.into(), value) {
-            if self.name.get(&old).map(String::as_str) == Some(name) {
-                self.name.remove(&old);
-            }
+        if let Some(old) = self.value.insert(name.into(), value)
+            && self.name.get(&old).map(String::as_str) == Some(name)
+        {
+            self.name.remove(&old);
         }
         self.name.insert(value, name.into());
     }

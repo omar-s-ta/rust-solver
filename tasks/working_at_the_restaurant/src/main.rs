@@ -35,7 +35,7 @@ fn to_dishwasher(dishes: i32, stacks: &mut [i32]) {
 fn solve(input: &mut Input, _out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let mut first = true;
     loop {
-        let n = input.read_int();
+        let n = input.read_i32();
         if n == 0 {
             break;
         }
@@ -46,7 +46,7 @@ fn solve(input: &mut Input, _out: &mut Output, _test_case: usize, _data: &mut Pr
         let mut stacks = vec![0; 2];
         for _ in 0..n {
             let cmd = input.read_string();
-            let dishes = input.read_int();
+            let dishes = input.read_i32();
             if cmd.starts_with('D') {
                 from_waiter(dishes, &mut stacks);
             } else {

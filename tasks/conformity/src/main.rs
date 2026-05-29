@@ -15,7 +15,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     let mut combinations = HashMap::new();
     for _ in 0..n {
-        let mut courses = input.read_ushort_vec(5);
+        let mut courses = input.read_u16_vec(5);
         courses.sort();
 
         *combinations.entry(courses).or_insert(0_u32) += 1;
