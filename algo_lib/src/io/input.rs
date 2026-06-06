@@ -1,12 +1,19 @@
-use std::fmt::Debug;
-use std::io::Read;
-use std::str::FromStr;
+use std::fs::File;
+use std::io::{Read, Stdin};
 
-pub struct Input<'s> {
-    input: &'s mut (dyn Read + Send),
+enum InputSource {
+    Stdin(Stdin),
+    File(File),
+    Slice,
+    Delegate(Box<dyn Read + Send>),
+}
+
+pub struct Input {
+    input: InputSource,
     buf: Vec<u8>,
     at: usize,
     buf_read: usize,
+    eol: bool,
 }
 
 macro_rules! read_impl {
@@ -14,39 +21,56 @@ macro_rules! read_impl {
         pub fn $read_name(&mut self) -> $t {
             self.read()
         }
-
         pub fn $read_vec_name(&mut self, len: usize) -> Vec<$t> {
             self.read_vec(len)
         }
     };
-
     ($t: ty, $read_name: ident, $read_vec_name: ident, $read_pair_vec_name: ident) => {
         read_impl!($t, $read_name, $read_vec_name);
-
         pub fn $read_pair_vec_name(&mut self, len: usize) -> Vec<($t, $t)> {
             self.read_vec(len)
         }
     };
 }
 
-impl<'s> Input<'s> {
-    const DEFAULT_BUF_SIZE: usize = 4096;
+impl Input {
+    const DEFAULT_BUF_SIZE: usize = 1 << 18;
+    const FIX_EOL: bool = true;
 
-    pub fn new(input: &'s mut (dyn Read + Send)) -> Self {
+    pub fn stdin() -> Self {
         Self {
-            input,
+            input: InputSource::Stdin(std::io::stdin()),
             buf: vec![0; Self::DEFAULT_BUF_SIZE],
             at: 0,
             buf_read: 0,
+            eol: true,
         }
     }
-
-    pub fn new_with_size(input: &'s mut (dyn Read + Send), buf_size: usize) -> Self {
+    pub fn file(file: File) -> Self {
         Self {
-            input,
-            buf: vec![0; buf_size],
+            input: InputSource::File(file),
+            buf: vec![0; Self::DEFAULT_BUF_SIZE],
             at: 0,
             buf_read: 0,
+            eol: true,
+        }
+    }
+    pub fn slice(input: &[u8]) -> Self {
+        Self {
+            input: InputSource::Slice,
+            buf: input.to_vec(),
+            at: 0,
+            buf_read: input.len(),
+            eol: true,
+        }
+    }
+    pub fn delegate(reader: impl Read + Send + 'static) -> Self {
+        Self {
+            input: InputSource::Delegate(Box::new(reader)),
+            buf: vec![0; Self::DEFAULT_BUF_SIZE],
+            at: 0,
+            buf_read: 0,
+            eol: true,
         }
     }
 
@@ -54,18 +78,19 @@ impl<'s> Input<'s> {
         if self.refill_buffer() {
             let res = self.buf[self.at];
             self.at += 1;
-            if res == b'\r' {
+            if Self::FIX_EOL && res == b'\r' {
+                self.eol = true;
                 if self.refill_buffer() && self.buf[self.at] == b'\n' {
                     self.at += 1;
                 }
                 return Some(b'\n');
             }
+            self.eol = res == b'\n';
             Some(res)
         } else {
             None
         }
     }
-
     pub fn peek(&mut self) -> Option<u8> {
         if self.refill_buffer() {
             let res = self.buf[self.at];
@@ -74,43 +99,42 @@ impl<'s> Input<'s> {
             None
         }
     }
-
     pub fn skip_whitespace(&mut self) {
         while let Some(b) = self.peek() {
-            if !char::from(b).is_whitespace() {
+            if !b.is_ascii_whitespace() {
                 return;
             }
             self.get();
         }
     }
-
     pub fn next_token(&mut self) -> Option<Vec<u8>> {
         self.skip_whitespace();
-        let mut res = Vec::new();
-        while let Some(c) = self.get() {
-            if char::from(c).is_whitespace() {
+        let mut token = Vec::new();
+        while let Some(b) = self.get() {
+            if b.is_ascii_whitespace() {
                 break;
             }
-            res.push(c);
+            token.push(b);
         }
-        if res.is_empty() { None } else { Some(res) }
+        if token.is_empty() { None } else { Some(token) }
     }
-
-    //noinspection RsSelfConvention
     pub fn is_exhausted(&mut self) -> bool {
         self.peek().is_none()
     }
-
-    //noinspection RsSelfConvention
     pub fn is_empty(&mut self) -> bool {
         self.skip_whitespace();
         self.is_exhausted()
+    }
+    pub fn is_run_done(&mut self) -> bool {
+        match self.input {
+            InputSource::Slice => self.is_empty(),
+            _ => true,
+        }
     }
 
     pub fn read<T: Readable>(&mut self) -> T {
         T::read(self)
     }
-
     pub fn read_vec<T: Readable>(&mut self, size: usize) -> Vec<T> {
         let mut res = Vec::with_capacity(size);
         for _ in 0..size {
@@ -118,44 +142,9 @@ impl<'s> Input<'s> {
         }
         res
     }
-
-    pub fn read_string(&mut self) -> String {
-        match self.next_token() {
-            None => {
-                panic!("Input exhausted");
-            }
-            Some(res) => unsafe { String::from_utf8_unchecked(res) },
-        }
-    }
-
-    pub fn read_line(&mut self) -> String {
-        let mut res = String::new();
-        while let Some(c) = self.get() {
-            if c == b'\n' {
-                break;
-            }
-            if c == b'\r' {
-                if self.peek() == Some(b'\n') {
-                    self.get();
-                }
-                break;
-            }
-            res.push(c.into());
-        }
-        res
-    }
-
-    fn read_integer<T: FromStr>(&mut self) -> T
-    where
-        <T as FromStr>::Err: Debug,
-    {
-        let res = self.read_string();
-        res.parse::<T>().unwrap()
-    }
-
-    pub fn read_char(&mut self) -> char {
+    pub fn read_char(&mut self) -> u8 {
         self.skip_whitespace();
-        self.get().unwrap().into()
+        self.get().unwrap()
     }
 
     read_impl!(u16, read_u16, read_u16_vec);
@@ -171,7 +160,12 @@ impl<'s> Input<'s> {
     fn refill_buffer(&mut self) -> bool {
         if self.at == self.buf_read {
             self.at = 0;
-            self.buf_read = self.input.read(&mut self.buf).unwrap();
+            self.buf_read = match &mut self.input {
+                InputSource::Stdin(stdin) => stdin.read(&mut self.buf).unwrap(),
+                InputSource::File(file) => file.read(&mut self.buf).unwrap(),
+                InputSource::Slice => 0,
+                InputSource::Delegate(reader) => reader.read(&mut self.buf).unwrap(),
+            };
             self.buf_read != 0
         } else {
             true
@@ -182,46 +176,102 @@ impl<'s> Input<'s> {
 pub trait Readable {
     fn read(input: &mut Input) -> Self;
 }
-
-impl Readable for char {
+impl Readable for u8 {
     fn read(input: &mut Input) -> Self {
         input.read_char()
     }
 }
-
 impl<T: Readable> Readable for Vec<T> {
     fn read(input: &mut Input) -> Self {
         let size = input.read();
         input.read_vec(size)
     }
 }
-
-impl Readable for String {
+impl<T: Readable, const SIZE: usize> Readable for [T; SIZE] {
     fn read(input: &mut Input) -> Self {
-        input.read_string()
+        std::array::from_fn(|_| input.read::<T>())
     }
 }
 
-macro_rules! read_integer {
-    ($($t:ident)+) => {$(
-        impl Readable for $t {
-            fn read(input: &mut Input) -> Self {
-                input.read_integer()
+impl Read for Input {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        for (i, c) in buf.iter_mut().enumerate() {
+            match self.get() {
+                Some(b) => *c = b,
+                None => return Ok(i),
             }
         }
-    )+};
+        Ok(buf.len())
+    }
 }
 
-read_integer!(i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize);
+macro_rules! read_signed {
+    ($($t:ident)+) => {
+        $(impl Readable for $t {
+            fn read(input: &mut Input) -> Self {
+                input.skip_whitespace();
+                let mut c = input.get().unwrap();
+                let sgn = match c {
+                    b'-' => { c = input.get().unwrap(); true }
+                    b'+' => { c = input.get().unwrap(); false }
+                    _ => false,
+                };
+                let mut res = 0;
+                loop {
+                    assert!(c.is_ascii_digit());
+                    res *= 10;
+                    let d = (c - b'0') as $t; if sgn { res -= d; } else { res += d; }
+                    match input.get() {
+                        None => break,
+                        Some(ch) => {
+                            if ch.is_ascii_whitespace() { break; } else { c = ch; }
+                        }
+                    }
+                }
+                res
+            }
+        })+
+    };
+}
+macro_rules! read_unsigned {
+    ($($t:ident)+) => {
+        $(impl Readable for $t {
+            fn read(input: &mut Input) -> Self {
+                input.skip_whitespace();
+                let mut c = input.get().unwrap();
+                if c == b'+' {
+                    c = input.get().unwrap();
+                }
+                let mut res = 0;
+                loop {
+                    assert!(c.is_ascii_digit());
+                    res *= 10;
+                    let d = (c - b'0') as $t;
+                    res += d;
+                    match input.get() {
+                        None => break,
+                        Some(ch) => {
+                            if ch.is_ascii_whitespace() { break; } else { c = ch; }
+                        }
+                    }
+                }
+                res
+            }
+        })+
+    };
+}
+
+read_signed!(i8 i16 i32 i64 i128 isize);
+read_unsigned!(u16 u32 u64 u128 usize);
 
 macro_rules! tuple_readable {
     ($($name:ident)+) => {
-        impl<$($name: Readable), +> Readable for ($($name,)+) {
+        impl<$($name: Readable),+> Readable for ($($name,)+) {
             fn read(input: &mut Input) -> Self {
                 ($($name::read(input),)+)
             }
         }
-    }
+    };
 }
 
 tuple_readable! {T}
