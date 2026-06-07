@@ -5,6 +5,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -13,8 +14,9 @@ type PreCalc = ();
 /// Avoid creating lists since it can be of size 2^30.
 /// Use `xor` to get the number in the reversed order.
 ///
+/// TODO:
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let line = input.read_line();
+    let line = input.read_line().to_string();
     let line = line.split_whitespace().collect::<Vec<_>>();
 
     let mut it = line.iter();

@@ -5,6 +5,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 use algo_lib::teque::Teque;
 
 type PreCalc = Teque<usize>;
@@ -13,13 +14,13 @@ type PreCalc = Teque<usize>;
  * Use two deques and preserve the state that `a.size() == b.size() || a.size() == b.size() + 1`
  */
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, teque: &mut PreCalc) {
-    let command = input.read_string().chars().collect::<Vec<_>>();
+    let command = input.read_str();
     let value = input.read_size();
 
-    if command[0] == 'p' {
+    if command[0] == b'p' {
         match command[command.len() - 1] {
-            'k' => teque.push_back(value),
-            't' => teque.push_front(value),
+            b'k' => teque.push_back(value),
+            b't' => teque.push_front(value),
             _ => teque.push_middle(value),
         }
     } else {

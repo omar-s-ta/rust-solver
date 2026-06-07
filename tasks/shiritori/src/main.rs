@@ -7,6 +7,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -14,11 +15,11 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let n = input.read_size();
 
     let mut set = HashSet::new();
-    let mut prv = input.read_string().into_bytes();
+    let mut prv = input.read_str();
     set.insert(prv.clone());
 
     for i in 1..n {
-        let nxt = input.read_string().into_bytes();
+        let nxt = input.read_str();
         if nxt[0] != prv[prv.len() - 1] || set.contains(&nxt) {
             out.print_line(format!("Player {} lost", if i % 2 == 0 { 1 } else { 2 }));
             return;

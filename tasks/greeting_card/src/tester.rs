@@ -2,8 +2,8 @@ use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
 
 pub fn check(expected: &mut &[u8], actual: &mut &[u8]) -> Result<(), String> {
-    let mut expected = Input::new(expected);
-    let mut actual = Input::new(actual);
+    let mut expected = Input::slice(expected);
+    let mut actual = Input::slice(actual);
     let mut token_num = 0usize;
     loop {
         let expected_token = expected.next_token();
@@ -76,10 +76,11 @@ pub(crate) fn run_tests() -> bool {
                         }
                         println!("{}Output:{}", blue, def);
                         match std::panic::catch_unwind(|| {
-                            let mut file = std::fs::File::open(&path).unwrap();
+                            let file = std::fs::File::open(&path).unwrap();
                             let started = std::time::Instant::now();
                             let mut output = Vec::new();
-                            let is_exhausted = crate::run(Input::new(&mut file), Output::new(&mut output));
+                            let is_exhausted =
+                                crate::run(Input::file(file), Output::buf(&mut output));
                             let res = started.elapsed();
                             println!("{}", String::from_utf8_lossy(&output));
                             (output, res, is_exhausted)

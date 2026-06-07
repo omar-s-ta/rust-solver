@@ -45,7 +45,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
         }
         i += 1;
     }
-    out.print_empty_line();
+    out.print_line(());
 }
 
 pub static TEST_TYPE: TestType = TestType::Single;

@@ -7,6 +7,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -14,7 +15,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let mut map: HashMap<String, i32> = HashMap::new();
 
     loop {
-        let s = input.read_line();
+        let s = input.read_line().to_string();
         if s == "***" {
             break;
         }

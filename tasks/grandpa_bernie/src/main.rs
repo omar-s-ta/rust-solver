@@ -7,15 +7,17 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::Str;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_u32();
 
-    let mut map: HashMap<String, Vec<u32>> = HashMap::new();
+    let mut map: HashMap<Str, Vec<u32>> = HashMap::new();
     for _ in 0..n {
-        map.entry(input.read_string())
+        map.entry(input.read_str())
             .or_default()
             .push(input.read_u32());
     }
@@ -23,7 +25,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     let q = input.read_u32();
     for _ in 0..q {
-        out.print_line(map.get(&input.read_string()).unwrap()[input.read_size() - 1]);
+        out.print_line(map.get(&input.read_str()).unwrap()[input.read_size() - 1]);
     }
 }
 

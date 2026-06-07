@@ -1,5 +1,6 @@
 //{"name":"Adding Words","group":"Kattis","url":"https://open.kattis.com/problems/addingwords","interactive":false,"timeLimit":1000,"tests":[{"input":"def foo 3\ncalc foo + bar =\ndef bar 7\ndef programming 10\ncalc foo + bar =\ndef is 4\ndef fun 8\ncalc programming - is + fun =\ndef fun 1\ncalc programming - is + fun =\nclear\n","output":"foo + bar = unknown\nfoo + bar = programming\nprogramming - is + fun = unknown\nprogramming - is + fun = bar\n"}],"testType":"single","input":{"type":"stdin","fileName":null,"pattern":null},"output":{"type":"stdout","fileName":null,"pattern":null},"languages":{"java":{"taskClass":"AddingWords"}}}
 
+use algo_lib::string::str::StrReader;
 use std::collections::HashMap;
 
 use algo_lib::io::input::Input;
@@ -55,7 +56,7 @@ impl State {
 type PreCalc = State;
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, data: &mut PreCalc) {
-    let command = input.read_line();
+    let command = input.read_line().to_string();
     let mut commands = command.split_whitespace();
 
     match commands.next().unwrap() {
@@ -66,7 +67,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, data: &mut PreC
         }
         "calc" => {
             let result = data.calc(commands.clone()).unwrap_or("unknown");
-            out.print_iter_one_line(commands.chain(std::iter::once(result)))
+            out.print_line_iter(commands.chain(std::iter::once(result)))
         }
         _ => data.clear(),
     }

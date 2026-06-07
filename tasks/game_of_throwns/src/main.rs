@@ -5,6 +5,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -14,7 +15,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     let mut actions = Vec::new();
     for _ in 0..m {
-        let action = input.read_string();
+        let action = input.read_str().to_string();
         if action.starts_with('u') {
             let undo = input.read_size();
             actions.truncate(actions.len() - undo);

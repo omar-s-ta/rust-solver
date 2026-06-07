@@ -43,7 +43,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, rng: &mut PreCa
         // out.print(random_string(14, rng));
         out.print(to_string(i));
     }
-    out.print_empty_line();
+    out.print_line(());
 }
 
 pub static TEST_TYPE: TestType = TestType::Single;

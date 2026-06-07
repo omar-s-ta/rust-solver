@@ -8,13 +8,15 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::Str;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let mut words = vec![];
     while input.peek().is_some() {
-        words.push(input.read_string());
+        words.push(input.read_str());
     }
     words.sort();
     words.dedup();
@@ -23,9 +25,9 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     for i in 0..words.len() {
         for j in 0..words.len() {
             if i != j {
-                let mut string = String::with_capacity(words[i].len() + words[j].len());
-                string.push_str(&words[i]);
-                string.push_str(&words[j]);
+                let mut string: Str = Vec::with_capacity(words[i].len() + words[j].len()).into();
+                string += &words[i];
+                string += &words[j];
                 compounds.push(string);
             }
         }
@@ -39,7 +41,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 fn _solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let mut words = vec![];
     while input.peek().is_some() {
-        words.push(input.read_string());
+        words.push(input.read_str());
     }
     let mut set = BTreeSet::new();
     for i in 0..words.len() {

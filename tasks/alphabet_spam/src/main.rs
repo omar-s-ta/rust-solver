@@ -5,27 +5,29 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 /// Simulation. Just count and divide by length.
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let string = input.read_string();
+    let string = input.read_str();
     let n = string.len() as f64;
 
     let (w, l, u, s) = string
-        .chars()
+        .iter()
         .fold((0.0, 0.0, 0.0, 0.0), |(w, l, u, s), ch| match ch {
-            c if c.is_uppercase() => (w, l, u + 1_f64, s),
-            c if c.is_lowercase() => (w, l + 1_f64, u, s),
-            '_' => (w + 1_f64, l, u, s),
+            c if c.is_ascii_uppercase() => (w, l, u + 1_f64, s),
+            c if c.is_ascii_lowercase() => (w, l + 1_f64, u, s),
+            b'_' => (w + 1_f64, l, u, s),
             _ => (w, l, u, s + 1_f64),
         });
 
-    out.print_line(format!("{:.15}", w / n));
-    out.print_line(format!("{:.15}", l / n));
-    out.print_line(format!("{:.15}", u / n));
-    out.print_line(format!("{:.15}", s / n));
+    out.set_precision(15);
+    out.print_line(w / n);
+    out.print_line(l / n);
+    out.print_line(u / n);
+    out.print_line(s / n);
 }
 
 pub static TEST_TYPE: TestType = TestType::Single;

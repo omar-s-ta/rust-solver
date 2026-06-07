@@ -5,6 +5,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -35,13 +36,13 @@ type PreCalc = ();
 ///     * therefore no beat ever has two catches.
 /// -------------------------------------------------------------
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let pattern = input.read_string();
-    let bytes = pattern.as_bytes();
+    let bytes = input.read_str();
     let len = bytes.len();
     let sum = bytes.iter().map(|b| usize::from(b - b'0')).sum::<usize>();
 
     if sum % len != 0 {
-        out.print_line(format!("{}: invalid # of balls", pattern));
+        out.print(bytes);
+        out.print_line(": invalid # of balls");
         return;
     }
 
@@ -55,9 +56,13 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     });
 
     if invalid {
-        out.print_line(format!("{}: invalid pattern", pattern));
+        out.print(bytes);
+        out.print_line(": invalid pattern");
     } else {
-        out.print_line(format!("{}: valid with {} balls", pattern, sum / len));
+        out.print(bytes);
+        out.print(": valid with ");
+        out.print(sum / len);
+        out.print_line(" balls");
     }
 }
 

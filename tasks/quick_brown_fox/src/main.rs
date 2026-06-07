@@ -5,14 +5,14 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 /// Use a hash to mark seen letters
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let line = input.read_line();
-    let visited = line
-        .as_bytes()
+    let visited = input
+        .read_line()
         .iter()
         .fold(vec![false; 26], |mut taken, b| {
             if b.is_ascii_alphabetic() {

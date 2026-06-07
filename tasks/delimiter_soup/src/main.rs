@@ -5,16 +5,17 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
-fn is_match(a: char, b: char) -> bool {
-    if a == '(' {
-        b == ')'
-    } else if a == '{' {
-        b == '}'
-    } else if a == '[' {
-        b == ']'
+fn is_match(a: u8, b: u8) -> bool {
+    if a == b'(' {
+        b == b')'
+    } else if a == b'{' {
+        b == b'}'
+    } else if a == b'[' {
+        b == b']'
     } else {
         false
     }
@@ -27,17 +28,19 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let _ = input.read_size();
     let program = input.read_line();
 
-    let is_open = |ch: char| ch == '(' || ch == '{' || ch == '[';
+    let is_open = |ch: u8| ch == b'(' || ch == b'{' || ch == b'[';
     let mut st = Vec::new();
 
-    for (i, ch) in program.chars().enumerate() {
-        if ch.is_whitespace() {
+    for (i, ch) in program.iter().enumerate() {
+        if ch.is_ascii_whitespace() {
             continue;
         }
-        if is_open(ch) {
+        if is_open(*ch) {
             st.push(ch);
-        } else if st.last().is_none_or(|&token| !is_match(token, ch)) {
-            out.print_line(format!("{} {}", ch, i));
+        } else if st.last().is_none_or(|&token| !is_match(*token, *ch)) {
+            out.print(ch);
+            out.print(b' ');
+            out.print_line(i);
             return;
         } else {
             st.pop();

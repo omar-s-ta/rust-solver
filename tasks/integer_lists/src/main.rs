@@ -7,6 +7,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -14,10 +15,11 @@ type PreCalc = ();
 /// Use a double ended queue to simulate reversing and deletion.
 /// Only reverse once in the end if needed.
 ///
+/// TODO:
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
-    let program = input.read_string();
+    let program = input.read_str().to_string();
     let _ = input.read_size();
-    let list = input.read_string();
+    let list = input.read_str().to_string();
 
     let list = list[1..list.len() - 1]
         .split(',')

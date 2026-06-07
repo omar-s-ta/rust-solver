@@ -8,19 +8,21 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::Str;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 #[derive(Default)]
 struct Value {
     count: u32,
-    callers: HashSet<String>,
+    callers: HashSet<Str>,
 }
 
 impl Value {
-    fn inc(&mut self, caller: &str) {
+    fn inc(&mut self, caller: Str) {
         self.count += 1;
-        self.callers.insert(caller.into());
+        self.callers.insert(caller);
     }
 }
 
@@ -28,17 +30,17 @@ impl Value {
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_u32();
 
-    let mut map: BTreeMap<String, Value> = BTreeMap::new();
-    let mut set: HashSet<String> = HashSet::new();
+    let mut map: BTreeMap<Str, Value> = BTreeMap::new();
+    let mut set: HashSet<Str> = HashSet::new();
 
     for _ in 0..n {
         let line = input.read_line();
-        let mut words = line.split_whitespace();
-        let user = words.next().unwrap();
+        let mut words = line.split(|c| c.is_ascii_whitespace());
+        let user = Str::from(words.next().unwrap());
 
-        set.insert(user.into());
+        set.insert(user.clone());
         for word in words {
-            map.entry(word.into()).or_default().inc(user);
+            map.entry(word.into()).or_default().inc(user.clone());
         }
     }
 

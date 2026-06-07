@@ -7,6 +7,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type Variables = [i32; 26];
 
@@ -125,7 +126,7 @@ impl Statement {
                     PrintArg::Literal(s) => out.print(s),
                 }
                 if *new_line {
-                    out.print_empty_line();
+                    out.print_line(());
                 }
                 next_stmt
             }
@@ -223,7 +224,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, vars: &mut Vari
     let mut entries = Vec::new();
 
     while input.peek().is_some() {
-        let mut statement = input.read_line();
+        let mut statement = input.read_line().to_string();
         if let (Some(s), Some(e)) = (statement.find('"'), statement.rfind('"'))
             && statement[s + 1..e].contains(' ')
         {

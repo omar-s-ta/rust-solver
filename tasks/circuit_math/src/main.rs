@@ -16,7 +16,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     for i in 0..n {
         let ch = input.read_char();
-        if ch == 'T' {
+        if ch == b'T' {
             gates |= 1 << i;
         }
     }
@@ -25,17 +25,17 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
 
     while !input.is_empty() {
         let ch = input.read_char();
-        if ch.is_uppercase() {
-            let i = (ch as u32) - 'A' as u32;
+        if ch.is_ascii_uppercase() {
+            let i = (ch - b'A') as u32;
             expr.push(gates & (1 << i) != 0);
-        } else if ch == '-' {
+        } else if ch == b'-' {
             if let Some(b) = expr.last_mut() {
                 *b = b.not()
             }
         } else {
             expr.pop().and_then(|a| {
                 expr.last_mut()
-                    .map(|b| if ch == '*' { *b &= a } else { *b |= a })
+                    .map(|b| if ch == b'*' { *b &= a } else { *b |= a })
             });
         }
     }

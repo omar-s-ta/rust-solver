@@ -7,6 +7,7 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -19,7 +20,7 @@ type PreCalc = ();
  */
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_size();
-    let strs = input.read_vec::<String>(n);
+    let strs = input.read_str_vec(n);
 
     let mut lists = Vec::new();
     for i in 0..n {
@@ -50,7 +51,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     for index in lists[at].iter() {
         out.print(&strs[*index]);
     }
-    out.print_empty_line();
+    out.print_line(());
 }
 
 pub static TEST_TYPE: TestType = TestType::Single;

@@ -7,12 +7,13 @@ use algo_lib::list::List;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 struct Buffer {
-    left: Vec<char>,
-    right: Vec<char>,
+    left: Vec<u8>,
+    right: Vec<u8>,
 }
 
 impl Buffer {
@@ -23,7 +24,7 @@ impl Buffer {
         }
     }
 
-    fn insert(&mut self, c: char) {
+    fn insert(&mut self, c: u8) {
         self.left.push(c);
     }
 
@@ -65,11 +66,11 @@ fn _solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pr
     let s = input.read_line();
 
     let mut buffer = Buffer::new();
-    for c in s.chars() {
+    for c in s {
         match c {
-            '[' => buffer.home(),
-            ']' => buffer.end(),
-            '<' => buffer.backspace(),
+            b'[' => buffer.home(),
+            b']' => buffer.end(),
+            b'<' => buffer.backspace(),
             _ => buffer.insert(c),
         }
     }
@@ -87,11 +88,11 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let mut list = List::new();
     let mut it = list.begin();
 
-    for c in s.chars() {
+    for c in s {
         match c {
-            '[' => it = list.begin(),
-            ']' => it = list.end(),
-            '<' => {
+            b'[' => it = list.begin(),
+            b']' => it = list.end(),
+            b'<' => {
                 if it != list.begin() {
                     it.dec();
                     it = list.erase(&mut it);

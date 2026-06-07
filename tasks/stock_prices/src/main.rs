@@ -9,6 +9,7 @@ use algo_lib::io::output::Writable;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
@@ -88,12 +89,14 @@ impl Stock {
 /// Simulation with suitable data-structure.
 /// Just apply what the problem says. Use a data-structure where you can
 /// get the `min` and `max` value easily.
+///
+/// TODO:
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let n = input.read_u16();
     let mut stock = Stock::new();
 
     for _ in 0..n {
-        let order = input.read_line();
+        let order = input.read_line().to_string();
         let mut order = order.split_whitespace();
 
         let action = order.next().unwrap().as_bytes();

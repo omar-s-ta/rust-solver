@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
+use algo_lib::string::str::StrReader;
 
 use algo_lib::misc::test_type::TestType;
 
@@ -16,12 +17,12 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     let m = input.read_size();
 
     let mut scores = (0..n)
-        .map(|_| (input.read_string(), 0))
+        .map(|_| (input.read_str(), 0))
         .collect::<HashMap<_, _>>();
 
     let mut winners = Vec::new();
     for _ in 0..m {
-        let player = input.read_string();
+        let player = input.read_str();
         let points = input.read_u32();
 
         if let Some(score) = scores.get_mut(&player) {

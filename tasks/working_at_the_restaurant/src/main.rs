@@ -5,34 +5,39 @@ use algo_lib::io::output::Output;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
+use algo_lib::string::str::StrReader;
 
 type PreCalc = ();
 
 const P1: usize = 1;
 const P2: usize = 0;
 
-fn from_waiter(dishes: i32, stacks: &mut [i32]) {
+fn from_waiter(dishes: i32, stacks: &mut [i32], out: &mut Output) {
     stacks[P2] += dishes;
-    println!("DROP 2 {}", dishes);
+    out.print("DROP 2 ");
+    out.print_line(dishes);
 }
 
-fn to_dishwasher(dishes: i32, stacks: &mut [i32]) {
+fn to_dishwasher(dishes: i32, stacks: &mut [i32], out: &mut Output) {
     let mut dishes = dishes;
     let to_take = dishes.min(stacks[P1]);
     if to_take != 0 {
-        println!("TAKE 1 {}", to_take);
+        out.print("TAKE 1 ");
+        out.print_line(to_take);
         stacks[P1] -= to_take;
         dishes -= to_take;
     }
     if dishes != 0 {
         stacks[P1] += stacks[P2] - dishes;
-        println!("MOVE 2->1 {}", stacks[P2]);
+        out.print("MOVE 2->1 ");
+        out.print_line(stacks[P2]);
         stacks[P2] = 0;
-        println!("TAKE 1 {}", dishes);
+        out.print("TAKE 1 ");
+        out.print_line(dishes);
     }
 }
 
-fn solve(input: &mut Input, _out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
+fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut PreCalc) {
     let mut first = true;
     loop {
         let n = input.read_i32();
@@ -40,17 +45,17 @@ fn solve(input: &mut Input, _out: &mut Output, _test_case: usize, _data: &mut Pr
             break;
         }
         if !first {
-            println!();
+            out.print_line(());
         }
 
         let mut stacks = vec![0; 2];
         for _ in 0..n {
-            let cmd = input.read_string();
+            let cmd = input.read_str();
             let dishes = input.read_i32();
-            if cmd.starts_with('D') {
-                from_waiter(dishes, &mut stacks);
+            if cmd[0] == b'D' {
+                from_waiter(dishes, &mut stacks, out);
             } else {
-                to_dishwasher(dishes, &mut stacks);
+                to_dishwasher(dishes, &mut stacks, out);
             }
         }
 
