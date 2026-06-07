@@ -191,6 +191,12 @@ impl Write for Output<'_> {
     }
 }
 
+impl Drop for Output<'_> {
+    fn drop(&mut self) {
+        self.flush();
+    }
+}
+
 pub trait Writable {
     fn write(&self, output: &mut Output);
 }

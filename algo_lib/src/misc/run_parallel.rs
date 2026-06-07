@@ -45,6 +45,7 @@ where
                 );
                 output.flush();
                 fs.fetch_add(1, Ordering::Relaxed);
+                drop(output);
                 res
             });
             if do_parallel {
@@ -75,5 +76,5 @@ where
             output.write_all(&res).unwrap();
         }
     });
-    input.lock().unwrap().is_empty()
+    input.lock().unwrap().is_run_done()
 }
