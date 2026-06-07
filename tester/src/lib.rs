@@ -184,7 +184,10 @@ impl Tester {
                 test_set.print_details(),
             );
             let outcome = self.run_single_test(&input, expected.as_deref(), &test_set, &test);
-            if let Outcome::OK { duration, score, .. } = outcome {
+            if let Outcome::OK {
+                duration, score, ..
+            } = outcome
+            {
                 max_time = max_time.max(duration);
                 scores.push(score);
             } else {
@@ -198,13 +201,12 @@ impl Tester {
                     );
                     print::end_test(outcome, true);
                     for i in (0..1000).rev() {
-                        let in_file =
-                            format!(
-                                "{}/tasks/{}/tests/.failed_{:03}.in",
-                                workspace_root(),
-                                self.task_folder,
-                                i
-                            );
+                        let in_file = format!(
+                            "{}/tasks/{}/tests/.failed_{:03}.in",
+                            workspace_root(),
+                            self.task_folder,
+                            i
+                        );
                         if Path::new(&in_file).exists() {
                             continue;
                         }

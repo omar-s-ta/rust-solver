@@ -33,7 +33,11 @@ impl SampleTests {
 #[cfg(not(feature = "test"))]
 impl SampleTests {
     fn test_path(&self) -> String {
-        format!("{}/tasks/{}/tests", crate::workspace_root(), self.task_folder)
+        format!(
+            "{}/tasks/{}/tests",
+            crate::workspace_root(),
+            self.task_folder
+        )
     }
 }
 
