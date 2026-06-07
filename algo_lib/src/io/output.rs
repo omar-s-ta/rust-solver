@@ -1,55 +1,130 @@
-use std::{collections::VecDeque, io::Write};
+use std::cmp::Reverse;
+use std::fs::File;
+use std::{
+    collections::VecDeque,
+    io::{StdoutLock, Write},
+};
 
-pub struct Output<'s> {
-    output: &'s mut dyn Write,
-    buf: Vec<u8>,
-    at: usize,
-    auto_flush: bool,
+#[derive(Clone, Copy)]
+pub enum BoolOutput {
+    YesNo,
+    YesNoCaps,
+    PossibleImpossible,
+    Custom(&'static str, &'static str),
 }
-
-impl<'s> Output<'s> {
-    const DEFAULT_BUF_SIZE: usize = 4096;
-
-    pub fn new(output: &'s mut dyn Write) -> Self {
-        Self {
-            output,
-            buf: vec![0; Self::DEFAULT_BUF_SIZE],
-            at: 0,
-            auto_flush: false,
-        }
+impl BoolOutput {
+    pub fn output(&self, val: bool, output: &mut Output) {
+        (if val { self.yes() } else { self.no() }).write(output);
     }
 
-    pub fn new_with_auto_flush(output: &'s mut dyn Write) -> Self {
+    fn yes(&self) -> &str {
+        match self {
+            BoolOutput::YesNo => "Yes",
+            BoolOutput::YesNoCaps => "YES",
+            BoolOutput::PossibleImpossible => "Possible",
+            BoolOutput::Custom(yes, _) => yes,
+        }
+    }
+    fn no(&self) -> &str {
+        match self {
+            BoolOutput::YesNo => "No",
+            BoolOutput::YesNoCaps => "NO",
+            BoolOutput::PossibleImpossible => "Impossible",
+            BoolOutput::Custom(_, no) => no,
+        }
+    }
+}
+
+enum OutputDest<'s> {
+    Stdout(StdoutLock<'static>),
+    File(File),
+    Buf(&'s mut Vec<u8>),
+    Delegate(Box<dyn Write>),
+}
+
+pub struct Output<'s> {
+    output: OutputDest<'s>,
+    buf: Vec<u8>,
+    at: usize,
+    bool_output: BoolOutput,
+    precision: Option<usize>,
+    prefix: Option<u8>,
+    separator: u8,
+    suffix: Option<u8>,
+}
+impl<'s> Output<'s> {
+    pub fn buf(buf: &'s mut Vec<u8>) -> Self {
+        Self::new(OutputDest::Buf(buf))
+    }
+    fn new(output: OutputDest<'s>) -> Self {
         Self {
             output,
             buf: vec![0; Self::DEFAULT_BUF_SIZE],
             at: 0,
-            auto_flush: true,
+            bool_output: BoolOutput::YesNo,
+            precision: None,
+            prefix: None,
+            separator: b' ',
+            suffix: None,
         }
+    }
+}
+impl Output<'static> {
+    pub fn stdout() -> Self {
+        Self::new(OutputDest::Stdout(std::io::stdout().lock()))
+    }
+    pub fn file(file: File) -> Self {
+        Self::new(OutputDest::File(file))
+    }
+    pub fn delegate(delegate: impl Write + 'static) -> Self {
+        Self::new(OutputDest::Delegate(Box::new(delegate)))
+    }
+}
+impl Output<'_> {
+    const DEFAULT_BUF_SIZE: usize = 1 << 16;
+
+    pub fn set_bool_output(&mut self, bool_output: BoolOutput) {
+        self.bool_output = bool_output;
+    }
+    pub fn set_precision(&mut self, precision: usize) {
+        self.precision = Some(precision);
+    }
+    pub fn reset_precision(&mut self) {
+        self.precision = None;
+    }
+    pub fn set_prefix(&mut self, prefix: u8) {
+        self.prefix = Some(prefix);
+    }
+    pub fn separator(&self) -> u8 {
+        self.separator
+    }
+    pub fn set_separator(&mut self, separator: u8) {
+        self.separator = separator;
+    }
+    pub fn set_suffix(&mut self, suffix: u8) {
+        self.suffix = Some(suffix)
     }
 
     pub fn flush(&mut self) {
         if self.at != 0 {
-            self.output.write_all(&self.buf[..self.at]).unwrap();
-            self.output.flush().unwrap();
+            match &mut self.output {
+                OutputDest::Stdout(stdout) => {
+                    stdout.write_all(&self.buf[..self.at]).unwrap();
+                    stdout.flush().unwrap();
+                }
+                OutputDest::File(file) => {
+                    file.write_all(&self.buf[..self.at]).unwrap();
+                    file.flush().unwrap();
+                }
+                OutputDest::Buf(buf) => buf.extend_from_slice(&self.buf[..self.at]),
+                OutputDest::Delegate(delegate) => {
+                    delegate.write_all(&self.buf[..self.at]).unwrap();
+                    delegate.flush().unwrap();
+                }
+            }
             self.at = 0;
-            self.output.flush().expect("Couldn't flush output");
         }
     }
-
-    pub fn print<T: Writable>(&mut self, s: T) {
-        s.write(self);
-    }
-
-    pub fn print_line<T: Writable>(&mut self, s: T) {
-        self.print(s);
-        self.put(b'\n');
-    }
-
-    pub fn print_empty_line(&mut self) {
-        self.put(b'\n');
-    }
-
     pub fn put(&mut self, b: u8) {
         self.buf[self.at] = b;
         self.at += 1;
@@ -58,53 +133,39 @@ impl<'s> Output<'s> {
         }
     }
 
-    pub fn maybe_flush(&mut self) {
-        if self.auto_flush {
-            self.flush();
-        }
+    pub fn print<T: Writable>(&mut self, t: T) {
+        t.write(self);
     }
-
-    pub fn print_per_line<T: Writable>(&mut self, arg: &[T]) {
-        for i in arg {
-            i.write(self);
-            self.put(b'\n');
-        }
-    }
-
-    pub fn print_iter<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
-        let mut first = true;
-        for e in iter {
-            if first {
-                first = false;
-            } else {
-                self.put(b' ');
-            }
-            e.write(self);
-        }
-    }
-
-    pub fn print_iter_one_line<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
-        self.print_iter(iter);
+    pub fn print_line<T: Writable>(&mut self, t: T) {
+        self.print(t);
         self.put(b'\n');
     }
-
     pub fn print_iter_per_line<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
         for e in iter {
             e.write(self);
             self.put(b'\n');
         }
     }
-
-    pub fn print_iter_ref<'a, T: 'a + Writable, I: Iterator<Item = &'a T>>(&mut self, iter: I) {
+    pub fn print_iter<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
+        if self.prefix.is_some() {
+            self.prefix.unwrap().write(self);
+        }
         let mut first = true;
         for e in iter {
             if first {
                 first = false;
             } else {
-                self.put(b' ');
+                self.put(self.separator);
             }
             e.write(self);
         }
+        if self.suffix.is_some() {
+            self.suffix.unwrap().write(self);
+        }
+    }
+    pub fn print_line_iter<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
+        self.print_iter(iter);
+        self.put(b'\n');
     }
 }
 
@@ -122,10 +183,8 @@ impl Write for Output<'_> {
             start += len;
             rem -= len;
         }
-        self.maybe_flush();
         Ok(buf.len())
     }
-
     fn flush(&mut self) -> std::io::Result<()> {
         self.flush();
         Ok(())
@@ -135,74 +194,125 @@ impl Write for Output<'_> {
 pub trait Writable {
     fn write(&self, output: &mut Output);
 }
-
 impl Writable for &str {
     fn write(&self, output: &mut Output) {
         output.write_all(self.as_bytes()).unwrap();
     }
 }
-
 impl Writable for String {
     fn write(&self, output: &mut Output) {
-        output.write_all(self.as_bytes()).unwrap();
+        output.write_all(self.as_bytes()).unwrap()
     }
 }
-
 impl Writable for char {
     fn write(&self, output: &mut Output) {
         output.put(*self as u8);
     }
 }
-
+impl Writable for u8 {
+    fn write(&self, output: &mut Output) {
+        output.put(*self)
+    }
+}
+impl Writable for bool {
+    fn write(&self, output: &mut Output) {
+        let bool_output = output.bool_output;
+        bool_output.output(*self, output);
+    }
+}
+impl Writable for f64 {
+    fn write(&self, output: &mut Output) {
+        match output.precision {
+            Some(p) => write!(output, "{:.*}", p, self).unwrap(),
+            None => write!(output, "{}", self).unwrap(),
+        }
+    }
+}
+impl<T: Writable + ?Sized> Writable for &T {
+    fn write(&self, output: &mut Output) {
+        T::write(self, output);
+    }
+}
 impl<T: Writable> Writable for [T] {
     fn write(&self, output: &mut Output) {
-        output.print_iter_ref(self.iter());
+        output.print_iter(self.iter());
     }
 }
-
-impl<T: Writable, const N: usize> Writable for [T; N] {
+impl<T: Writable, const SIZE: usize> Writable for [T; SIZE] {
     fn write(&self, output: &mut Output) {
-        output.print_iter_ref(self.iter());
+        output.print_iter(self.iter());
     }
 }
-
-impl<T: Writable> Writable for &T {
-    fn write(&self, output: &mut Output) {
-        T::write(self, output)
-    }
-}
-
 impl<T: Writable> Writable for Vec<T> {
     fn write(&self, output: &mut Output) {
-        self.as_slice().write(output);
+        output.print_iter(self.iter());
     }
 }
-
-macro_rules! write_to_string {
-    ($($t:ident)+) => {$(
-        impl Writable for $t {
-            fn write(&self, output: &mut Output) {
-                self.to_string().write(output);
-            }
-        }
-    )+};
+impl<T: Writable> Writable for Reverse<T> {
+    fn write(&self, output: &mut Output) {
+        self.0.write(output);
+    }
 }
-
-write_to_string!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
-
-macro_rules! tuple_writable {
-    ($name0:ident $($name:ident: $id:tt )*) => {
-        impl<$name0: Writable, $($name: Writable,)*> Writable for ($name0, $($name,)*) {
-            fn write(&self, out: &mut Output) {
-                self.0.write(out);
-                $(
-                out.put(b' ');
-                self.$id.write(out);
-                )*
-            }
+impl<T: Writable> Writable for VecDeque<T> {
+    fn write(&self, output: &mut Output) {
+        output.print_iter(self.iter());
+    }
+}
+impl<T: Writable> Writable for Option<T> {
+    fn write(&self, output: &mut Output) {
+        match self {
+            Some(t) => t.write(output),
+            None => (-1).write(output),
         }
     }
 }
+impl Writable for () {
+    fn write(&self, _output: &mut Output) {}
+}
+
+macro_rules! write_unsigned { ($($t:ty)+) => {
+    $(impl Writable for $t {
+        fn write(&self, output: &mut Output) {
+            let mut n = *self;
+            if n == 0 {
+                output.put(b'0');
+                return;
+            }
+            let mut buf = [0u8; 40];
+            let mut pos = buf.len();
+            while n > 0 {
+                pos -= 1;
+                buf[pos] = b'0' + (n % 10) as u8;
+                n /= 10;
+            }
+            output.write_all(&buf[pos..]).unwrap();
+        }
+    })+
+};}
+macro_rules! write_signed { ($($t:ty)+) => {
+    $(impl Writable for $t {
+        fn write(&self, output: &mut Output) {
+            if *self < 0 {
+                output.put(b'-');
+            }
+            self.unsigned_abs().write(output);
+        }
+    })+
+};}
+macro_rules! tuple_writable { ($hd:ident $($tl:ident : $id:tt)*) => {
+    impl<$hd: Writable, $($tl: Writable,)*> Writable for ($hd, $($tl,)*) {
+        fn write(&self, output: &mut Output) {
+            self.0.write(output);
+            $(
+            output.put(output.separator);
+            self.$id.write(output);
+            )*
+        }
+    }
+};}
+
+write_unsigned!(u16 u32 u64 u128 usize);
+write_signed!(i8 i16 i32 i64 i128 isize);
 
 tuple_writable! {T}
 tuple_writable! {T U:1}
@@ -211,25 +321,3 @@ tuple_writable! {T U:1 V:2 X:3}
 tuple_writable! {T U:1 V:2 X:3 Y:4}
 tuple_writable! {T U:1 V:2 X:3 Y:4 Z:5}
 tuple_writable! {T U:1 V:2 X:3 Y:4 Z:5 A:6}
-
-impl<T: Writable> Writable for Option<T> {
-    fn write(&self, output: &mut Output) {
-        match self {
-            None => (-1).write(output),
-            Some(t) => t.write(output),
-        }
-    }
-}
-
-impl<T: Writable> Writable for VecDeque<T> {
-    fn write(&self, output: &mut Output) {
-        '['.write(output);
-        (0..self.len()).for_each(|i| {
-            if i > 0 {
-                ','.write(output);
-            }
-            self[i].write(output);
-        });
-        ']'.write(output);
-    }
-}
