@@ -1,0 +1,273 @@
+use std::any::Any;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::time::Duration;
+
+use crate::classic::run_single_test_classic;
+use crate::interactive::{run_single_test_interactive, SolutionRunner};
+use algo_lib::io::input::Input;
+use algo_lib::io::output::Output;
+#[cfg(not(feature = "test"))]
+use test_set::GeneratedTests;
+use test_set::{GeneratedTestSet, SampleTests, TestSet};
+
+pub mod classic;
+pub mod interactive;
+mod print;
+pub mod test_set;
+
+/// Absolute path of the cargo workspace root, located by walking up from the
+/// process's current working directory until a `Cargo.toml` with a
+/// `[workspace]` table is found. Cached on first call.
+///
+/// All on-disk paths the tester emits (`tasks/<task>/tests/...`,
+/// `tasks/<task>/tests/.failed_*`) are anchored here so that running a task's
+/// binary from a subdirectory (e.g. when an IDE invokes `cargo run` inside
+/// `tasks/<task>/`) still finds the right files.
+pub(crate) fn workspace_root() -> &'static str {
+    use std::sync::OnceLock;
+    static ROOT: OnceLock<String> = OnceLock::new();
+    ROOT.get_or_init(|| {
+        let start = std::env::current_dir().expect("current dir");
+        let mut dir = start.clone();
+        loop {
+            let manifest = dir.join("Cargo.toml");
+            if manifest.is_file() {
+                if let Ok(contents) = std::fs::read_to_string(&manifest) {
+                    if contents.contains("[workspace]") {
+                        return dir.to_string_lossy().into_owned();
+                    }
+                }
+            }
+            if !dir.pop() {
+                return start.to_string_lossy().into_owned();
+            }
+        }
+    })
+}
+
+pub enum Outcome {
+    /// `score` is `Some(n)` when the test passed with a numeric score (e.g.,
+    /// for a heuristic problem) and `None` when the test passed with no score
+    /// (binary checker). Aggregate stats in `Tester::test` are computed only
+    /// over tests with `Some(_)` scores.
+    OK {
+        duration: Duration,
+        input_exhausted: bool,
+        score: Option<i64>,
+    },
+    TimeLimit {
+        duration: Duration,
+        input_exhausted: bool,
+    },
+    WrongAnswer {
+        checker_output: String,
+        input_exhausted: bool,
+    },
+    RuntimeError {
+        panic_reason: String,
+    },
+}
+
+pub enum Runner {
+    Classic {
+        checker: fn(Input, Option<Input>, Input) -> Result<Option<i64>, String>,
+    },
+    Interactive {
+        interactor: fn(Input, Option<Input>, SolutionRunner) -> Result<Option<i64>, String>,
+    },
+}
+
+pub struct Tester {
+    pub(crate) time_limit: u64,
+    pub(crate) print_limit: usize,
+    pub(crate) task_folder: String,
+    pub(crate) solution: fn(Input, Output) -> bool,
+    runner: Runner,
+}
+
+impl Tester {
+    /// Construct a classic-mode tester.
+    ///
+    /// `checker` returns `Ok(None)` when the test passes without a score,
+    /// `Ok(Some(n))` when it passes with score `n`, or `Err(msg)` when the
+    /// answer is wrong (terminates the test set with that message). Heuristic
+    /// problems that should keep running on invalid output return
+    /// `Ok(Some(0))` instead of `Err`.
+    pub fn new_classic(
+        time_limit: u64,
+        print_limit: usize,
+        task_folder: String,
+        solution: fn(Input, Output) -> bool,
+        checker: fn(Input, Option<Input>, Input) -> Result<Option<i64>, String>,
+    ) -> Self {
+        Self {
+            time_limit,
+            print_limit,
+            task_folder,
+            solution,
+            runner: Runner::Classic { checker },
+        }
+    }
+
+    /// Construct an interactive-mode tester.
+    ///
+    /// `interactor` returns `Ok(None)` when the test passes without a score,
+    /// `Ok(Some(n))` when it passes with score `n`, or `Err(msg)` when the
+    /// session is wrong (terminates the test set with that message).
+    pub fn new_interactive(
+        time_limit: u64,
+        print_limit: usize,
+        task_folder: String,
+        solution: fn(Input, Output) -> bool,
+        interactor: fn(Input, Option<Input>, SolutionRunner) -> Result<Option<i64>, String>,
+    ) -> Self {
+        Self {
+            time_limit,
+            print_limit,
+            task_folder,
+            solution,
+            runner: Runner::Interactive { interactor },
+        }
+    }
+
+    pub fn test_samples(&self) -> bool {
+        let test_set = SampleTests {
+            task_folder: self.task_folder.clone(),
+        };
+        self.test(test_set)
+    }
+
+    #[cfg(feature = "test")]
+    pub fn test_generated<Set: GeneratedTestSet>(
+        &self,
+        _name: &str,
+        _print_details: bool,
+        _set: Set,
+    ) -> bool {
+        true
+    }
+
+    #[cfg(not(feature = "test"))]
+    pub fn test_generated<Set: GeneratedTestSet>(
+        &self,
+        name: &str,
+        print_details: bool,
+        set: Set,
+    ) -> bool
+    where
+        Set::TestId: 'static,
+    {
+        let test_set = GeneratedTests {
+            name: name.to_string(),
+            print_details,
+            set,
+        };
+        self.test(test_set)
+    }
+
+    fn test<T: TestSet>(&self, test_set: T) -> bool {
+        let mut test_failed = 0usize;
+        let mut test_total = 0usize;
+        print::start_test_set(test_set.name());
+        let mut max_time = Duration::default();
+        let mut scores: Vec<Option<i64>> = Vec::new();
+        for test in test_set.tests() {
+            test_total += 1;
+            let input = test_set.input(&test);
+            let expected = test_set.output(&test, &input);
+            print::start_test(
+                &test,
+                self.trim(&input),
+                expected.as_ref().map(|v| self.trim(v.as_slice())),
+                test_set.print_details(),
+            );
+            let outcome = self.run_single_test(&input, expected.as_deref(), &test_set, &test);
+            if let Outcome::OK { duration, score, .. } = outcome {
+                max_time = max_time.max(duration);
+                scores.push(score);
+            } else {
+                test_failed += 1;
+                if !test_set.print_details() {
+                    print::start_test(
+                        &test,
+                        self.trim(&input),
+                        expected.as_ref().map(|v| self.trim(v.as_slice())),
+                        true,
+                    );
+                    print::end_test(outcome, true);
+                    for i in (0..1000).rev() {
+                        let in_file =
+                            format!(
+                                "{}/tasks/{}/tests/.failed_{:03}.in",
+                                workspace_root(),
+                                self.task_folder,
+                                i
+                            );
+                        if Path::new(&in_file).exists() {
+                            continue;
+                        }
+                        File::create(in_file).unwrap().write_all(&input).unwrap();
+                        if let Some(expected) = expected {
+                            File::create(format!(
+                                "{}/tasks/{}/tests/.failed_{:03}.ans",
+                                workspace_root(),
+                                self.task_folder,
+                                i
+                            ))
+                            .unwrap()
+                            .write_all(&expected)
+                            .unwrap();
+                        }
+                        break;
+                    }
+                    return false;
+                }
+            }
+            print::end_test(outcome, test_set.print_details());
+        }
+        print::end_test_set(test_failed, test_total, max_time, &scores);
+        test_failed == 0
+    }
+
+    fn run_single_test<T: TestSet>(
+        &self,
+        input: &[u8],
+        expected: Option<&[u8]>,
+        test_set: &T,
+        test_id: &T::TestId,
+    ) -> Outcome {
+        match self.runner {
+            Runner::Classic { checker } => {
+                run_single_test_classic(self, checker, input, expected, test_set, test_id)
+            }
+            Runner::Interactive { interactor } => run_single_test_interactive(
+                self,
+                interactor,
+                input,
+                expected,
+                test_set.print_details(),
+            ),
+        }
+    }
+
+    fn trim<'a>(&self, s: &'a [u8]) -> &'a [u8] {
+        if s.len() > self.print_limit {
+            &s[..self.print_limit]
+        } else {
+            s
+        }
+    }
+}
+
+pub(crate) fn process_error(err: Box<dyn Any + Send>) -> Outcome {
+    match err.downcast::<&str>() {
+        Ok(as_string) => Outcome::RuntimeError {
+            panic_reason: as_string.to_string(),
+        },
+        Err(_) => Outcome::RuntimeError {
+            panic_reason: String::new(),
+        },
+    }
+}
