@@ -79,6 +79,7 @@ pub(crate) fn run(mut input: Input, mut output: Output) -> bool {
                 i += 1;
             }
         }
+        _ => unreachable!(),
     }
     output.flush();
     match TASK_TYPE {
