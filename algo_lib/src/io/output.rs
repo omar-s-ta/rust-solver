@@ -147,8 +147,8 @@ impl Output<'_> {
         }
     }
     pub fn print_iter<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
-        if self.prefix.is_some() {
-            self.prefix.unwrap().write(self);
+        if let Some(p) = self.prefix {
+            self.put(p);
         }
         let mut first = true;
         for e in iter {
@@ -159,8 +159,8 @@ impl Output<'_> {
             }
             e.write(self);
         }
-        if self.suffix.is_some() {
-            self.suffix.unwrap().write(self);
+        if let Some(s) = self.suffix {
+            self.put(s);
         }
     }
     pub fn print_line_iter<T: Writable, I: Iterator<Item = T>>(&mut self, iter: I) {
