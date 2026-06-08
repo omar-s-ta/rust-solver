@@ -222,7 +222,8 @@ macro_rules! read_signed { ($($t:ident)+) => {
             loop {
                 assert!(c.is_ascii_digit());
                 res *= 10;
-                let d = (c - b'0') as $t; if sgn { res -= d; } else { res += d; }
+                let d = (c - b'0') as $t;
+                if sgn { res -= d; } else { res += d; }
                 match input.get() {
                     None => break,
                     Some(ch) => {

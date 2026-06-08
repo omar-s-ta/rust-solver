@@ -1,10 +1,8 @@
-use crate::{
-    io::{
-        input::{Input, Readable},
-        output::{Output, Writable},
-    },
-    transparent_wrapper,
+use crate::io::{
+    input::{Input, Readable},
+    output::{Output, Writable},
 };
+use crate::transparent_wrapper;
 use std::{
     fmt::Display,
     io::Write,
