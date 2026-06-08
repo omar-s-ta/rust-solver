@@ -4,7 +4,9 @@ This is a `Rust` mirror of the `C++` repo [cpp-solver](https://github.com/omar-s
 
 ## Repository Structure
 
-The repository is organized into the following directories:
+The repository is based on
+[example-contests-workspace](https://github.com/rust-competitive-helper/example-contests-workspace)
+and it's organized into the following directories:
 
 - **`algo_lib/`**: Implementations of core and advanced data structures
   and algorithms. These are reusable building blocks refined throughout
