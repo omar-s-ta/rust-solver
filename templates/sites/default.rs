@@ -13,7 +13,6 @@ pub(crate) fn run(mut input: Input, mut output: Output) -> bool {
     eprint!("\x1B[33m\x1B[03m");
 
     let mut pre_calc = ();
-    // output.set_bool_output(BoolOutput::YesNo);
 
     match TEST_TYPE {
         TestType::Single => solve(&mut input, &mut output, 1, &mut pre_calc),
