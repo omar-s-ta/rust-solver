@@ -1,1 +1,1 @@
-let input = algo_lib::io::input::Input::stdin();
+    let input = algo_lib::io::input::Input::stdin();

@@ -1,1 +1,1 @@
-let output = algo_lib::io::output::Output::stdout();
+    let output = algo_lib::io::output::Output::stdout();

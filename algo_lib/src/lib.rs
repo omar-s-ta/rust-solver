@@ -1,8 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
+pub mod collections;
 pub mod io;
 pub mod list;
 pub mod misc;
+pub mod numbers;
 pub mod string;
 pub mod teque;

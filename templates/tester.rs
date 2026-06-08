@@ -1,149 +1,126 @@
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
+use crate::{run, TASK_TYPE, TEST_TYPE, TestType};
+use algo_lib::collections::vec_ext::gen_vec::VecGen;
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
+use algo_lib::misc::random::Random;
+use algo_lib::string::str::StrReader;
+use std::io::{Read, Write};
+use std::thread::yield_now;
+use tester::classic::default_checker;
+use tester::classic::EPS;
+use tester::interactive::std_interactor;
+use tester::interactive::SolutionRunner;
+use tester::test_set::GeneratedTestSet;
+use tester::Tester;
 
-pub fn check(expected: &mut &[u8], actual: &mut &[u8]) -> Result<(), String> {
-    let mut expected = Input::slice(expected);
-    let mut actual = Input::slice(actual);
-    let mut token_num = 0usize;
-    loop {
-        let expected_token = expected.next_token();
-        let actual_token = actual.next_token();
-        if expected_token != actual_token {
-            if expected_token.is_none() {
-                return Err(format!("Expected has only {} tokens", token_num));
-            } else if actual_token.is_none() {
-                return Err(format!("Actual has only {} tokens", token_num));
-            } else {
-                return Err(format!(
-                    "Token #{} differs, expected {}, actual {}",
-                    token_num,
-                    String::from_utf8(expected_token.unwrap()).unwrap(),
-                    String::from_utf8(actual_token.unwrap()).unwrap()
-                ));
-            }
+const PRINT_LIMIT: usize = 1000;
+
+fn interact(mut input: Input, expected: Option<Input>, mut runner: SolutionRunner) -> Result<Option<i64>, String> {
+    let (mut sol, mut out) = runner.run();
+    Ok(None)
+}
+
+fn run_twice(
+    mut input: Input,
+    expected: Option<Input>,
+    mut runner: SolutionRunner,
+) -> Result<Option<i64>, String> {
+    let (mut sol, mut out) = runner.run();
+    input.read_line();
+    out.print_line("first");
+    let t = match TEST_TYPE {
+        TestType::RunTwiceSingle => None,
+        TestType::RunTwiceMultiNumber => {
+            let t = input.read_size();
+            out.print_line(t);
+            Some(t)
         }
-        token_num += 1;
-        if actual_token.is_none() {
-            break;
-        }
+        _ => unreachable!(),
+    };
+    let mut input_vec = Vec::new();
+    input.read_to_end(&mut input_vec).unwrap();
+    out.write_all(&input_vec).unwrap();
+    out.flush();
+    while !runner.is_finished() {
+        yield_now();
     }
-    Ok(())
+    let mut first_output = Vec::new();
+    sol.read_to_end(&mut first_output).unwrap();
+
+    let (mut sol, mut out) = runner.run();
+    out.print_line("second");
+    if let Some(t) = t {
+        out.print_line(t);
+    }
+    out.write_all(&first_output).unwrap();
+    out.flush();
+    let mut ans = Vec::new();
+    sol.read_to_end(&mut ans).unwrap();
+    default_checker(Input::slice(&input_vec), expected, Input::slice(&ans))
+    // check(Input::slice(&input_vec), expected, Input::slice(&ans))
+}
+
+fn check(mut input: Input, expected: Option<Input>, mut output: Input) -> Result<Option<i64>, String> {
+    Ok(None)
+}
+
+struct StressTest;
+
+impl GeneratedTestSet for StressTest {
+    type TestId = usize;
+
+    fn tests(&self) -> impl Iterator<Item=Self::TestId> {
+        1..
+    }
+
+    fn input(&self, test: &Self::TestId, out: &mut Output) {
+        let mut r = Random::new();
+    }
+
+    fn output(&self, test: &Self::TestId, input: &mut Input, out: &mut Output) -> bool {
+        false
+    }
+}
+
+struct MaxTest;
+
+impl GeneratedTestSet for MaxTest {
+    type TestId = usize;
+
+    fn tests(&self) -> impl Iterator<Item=Self::TestId> {
+        1..=1
+    }
+
+    fn input(&self, test: &Self::TestId, out: &mut Output) {
+        let mut r = Random::new_with_seed(239);
+    }
+
+    fn output(&self, test: &Self::TestId, input: &mut Input, out: &mut Output) -> bool {
+        false
+    }
 }
 
 pub(crate) fn run_tests() -> bool {
-    let blue = "\x1B[34m";
-    let red = "\x1B[31m";
-    let green = "\x1B[32m";
-    let yellow = "\x1B[33m";
-    let def = "\x1B[0m";
-    let time_limit = std::time::Duration::from_millis($TIME_LIMIT);
-    let mut paths = std::fs::read_dir("./tasks/$TASK/tests/")
-        .unwrap()
-        .map(|res| res.unwrap())
-        .collect::<Vec<_>>();
-    paths.sort_by(|a, b| a.path().cmp(&b.path()));
-    let mut test_failed = 0usize;
-    let mut test_total = 0usize;
-    for path in paths {
-        let sub_path = path;
-        if sub_path.file_type().unwrap().is_file() {
-            let path = sub_path.path();
-            match path.extension() {
-                None => {}
-                Some(extension) => {
-                    if extension.to_str() == Some("in") {
-                        println!("=====================================================");
-                        test_total += 1;
-                        let name = path.file_name().unwrap().to_str().unwrap();
-                        let name = &name[..name.len() - 3];
-                        println!("{}Test {}{}", blue, name, def);
-                        println!("{}Input:{}", blue, def);
-                        println!("{}", std::fs::read_to_string(&path).unwrap());
-                        let expected = match std::fs::read_to_string(
-                            path.parent().unwrap().join(format!("{}.out", name)),
-                        ) {
-                            Ok(res) => Some(res),
-                            Err(_) => None,
-                        };
-                        println!("{}Expected:{}", blue, def);
-                        match &expected {
-                            None => {
-                                println!("{}Not provided{}", yellow, def);
-                            }
-                            Some(expected) => {
-                                println!("{}", expected);
-                            }
-                        }
-                        println!("{}Output:{}", blue, def);
-                        match std::panic::catch_unwind(|| {
-                            let file = std::fs::File::open(&path).unwrap();
-                            let started = std::time::Instant::now();
-                            let mut output = Vec::new();
-                            let is_exhausted = crate::run(Input::file(file), Output::buf(&mut output));
-                            let res = started.elapsed();
-                            println!("{}", String::from_utf8_lossy(&output));
-                            (output, res, is_exhausted)
-                        }) {
-                            Ok((output, duration, is_exhausted)) => {
-                                println!(
-                                    "{}Time elapsed: {:.3}s{}",
-                                    blue,
-                                    (duration.as_millis() as f64) / 1000.,
-                                    def,
-                                );
-                                if !is_exhausted {
-                                    println!("{}Input not exhausted{}", red, def);
-                                }
-                                if let Some(expected) = expected {
-                                    let mut expected_bytes = expected.as_bytes();
-                                    match check(&mut expected_bytes, &mut &output[..]) {
-                                        Ok(_) => {}
-                                        Err(err) => {
-                                            println!(
-                                                "{}Verdict: {}Wrong Answer ({}){}",
-                                                blue, red, err, def
-                                            );
-                                            test_failed += 1;
-                                            continue;
-                                        }
-                                    }
-                                }
-                                if duration > time_limit {
-                                    test_failed += 1;
-                                    println!("{}Verdict: {}Time Limit{}", blue, red, def);
-                                } else {
-                                    println!("{}Verdict: {}OK{}", blue, green, def)
-                                }
-                            }
-                            Err(err) => {
-                                test_failed += 1;
-                                match err.downcast::<&str>() {
-                                    Ok(as_string) => println!(
-                                        "{}Verdict: {}RuntimeError ({:?}){}",
-                                        blue, red, as_string, def
-                                    ),
-                                    Err(err) => println!(
-                                        "{}Verdict: {}RuntimeError ({:?}){}",
-                                        blue, red, err, def
-                                    ),
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    let path = "./$TASK";
+    let tl = $TIME_LIMIT;
+    let tester = match TASK_TYPE {
+        crate::TaskType::Interactive => {
+            Tester::new_interactive(tl, PRINT_LIMIT, path.to_string(), run, std_interactor)
+            // Tester::new_interactive(tl, PRINT_LIMIT, path.to_string(), run, interact)
+            // Tester::new_interactive(tl, PRINT_LIMIT, path.to_string(), run, run_twice)
         }
-    }
-    if test_failed == 0 {
-        println!(
-            "{}All {}{}{} tests passed{}",
-            blue, green, test_total, blue, def
-        );
-    } else {
-        println!(
-            "{}{}/{}{} tests failed{}",
-            red, test_failed, test_total, blue, def
-        );
-    }
-    test_failed == 0
+        crate::TaskType::Classic => {
+            Tester::new_classic(tl, PRINT_LIMIT, path.to_string(), run, default_checker)
+            // Tester::new_classic(tl, PRINT_LIMIT, path.to_string(), run, check)
+        }
+    };
+    let passed = tester.test_samples();
+    // tester.test_generated("Max test", true, MaxTest);
+    // tester.test_generated("Stress test", false, StressTest);
+    passed
 }

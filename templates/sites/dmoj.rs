@@ -6,14 +6,12 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
     $CARET
 }
 
-pub static TEST_TYPE: TestType = TestType::$INVOKE;
+pub static TEST_TYPE: TestType = TestType::Single;
 pub static TASK_TYPE: TaskType = TaskType::$INTERACTIVE;
 
 pub(crate) fn run(mut input: Input, mut output: Output) -> bool {
     eprint!("\x1B[33m\x1B[03m");
-
     let mut pre_calc = ();
-    // output.set_bool_output(BoolOutput::YesNo);
 
     match TEST_TYPE {
         TestType::Single => solve(&mut input, &mut output, 1, &mut pre_calc),
