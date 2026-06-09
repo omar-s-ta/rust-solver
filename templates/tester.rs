@@ -3,24 +3,26 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::{run, TASK_TYPE, TEST_TYPE, TestType};
-use algo_lib::collections::vec_ext::gen_vec::VecGen;
+use crate::{TASK_TYPE, TEST_TYPE, TestType, run};
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
-use algo_lib::misc::random::Random;
 use algo_lib::string::str::StrReader;
 use std::io::{Read, Write};
 use std::thread::yield_now;
-use tester::classic::default_checker;
-use tester::classic::EPS;
-use tester::interactive::std_interactor;
-use tester::interactive::SolutionRunner;
-use tester::test_set::GeneratedTestSet;
 use tester::Tester;
+use tester::classic::EPS;
+use tester::classic::default_checker;
+use tester::interactive::SolutionRunner;
+use tester::interactive::std_interactor;
+use tester::test_set::GeneratedTestSet;
 
 const PRINT_LIMIT: usize = 1000;
 
-fn interact(mut input: Input, expected: Option<Input>, mut runner: SolutionRunner) -> Result<Option<i64>, String> {
+fn interact(
+    mut input: Input,
+    expected: Option<Input>,
+    mut runner: SolutionRunner,
+) -> Result<Option<i64>, String> {
     let (mut sol, mut out) = runner.run();
     Ok(None)
 }
@@ -65,7 +67,11 @@ fn run_twice(
     // check(Input::slice(&input_vec), expected, Input::slice(&ans))
 }
 
-fn check(mut input: Input, expected: Option<Input>, mut output: Input) -> Result<Option<i64>, String> {
+fn check(
+    mut input: Input,
+    expected: Option<Input>,
+    mut output: Input,
+) -> Result<Option<i64>, String> {
     Ok(None)
 }
 
@@ -74,12 +80,12 @@ struct StressTest;
 impl GeneratedTestSet for StressTest {
     type TestId = usize;
 
-    fn tests(&self) -> impl Iterator<Item=Self::TestId> {
+    fn tests(&self) -> impl Iterator<Item = Self::TestId> {
         1..
     }
 
     fn input(&self, test: &Self::TestId, out: &mut Output) {
-        let mut r = Random::new();
+        // let mut r = Random::new();
     }
 
     fn output(&self, test: &Self::TestId, input: &mut Input, out: &mut Output) -> bool {
@@ -92,12 +98,12 @@ struct MaxTest;
 impl GeneratedTestSet for MaxTest {
     type TestId = usize;
 
-    fn tests(&self) -> impl Iterator<Item=Self::TestId> {
+    fn tests(&self) -> impl Iterator<Item = Self::TestId> {
         1..=1
     }
 
     fn input(&self, test: &Self::TestId, out: &mut Output) {
-        let mut r = Random::new_with_seed(239);
+        // let mut r = Random::new_with_seed(239);
     }
 
     fn output(&self, test: &Self::TestId, input: &mut Input, out: &mut Output) -> bool {
@@ -119,8 +125,7 @@ pub(crate) fn run_tests() -> bool {
             // Tester::new_classic(tl, PRINT_LIMIT, path.to_string(), run, check)
         }
     };
-    let passed = tester.test_samples();
+    tester.test_samples()
     // tester.test_generated("Max test", true, MaxTest);
     // tester.test_generated("Stress test", false, StressTest);
-    passed
 }
