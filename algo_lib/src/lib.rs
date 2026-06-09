@@ -3,7 +3,5 @@
 
 pub mod collections;
 pub mod io;
-pub mod list;
 pub mod misc;
 pub mod string;
-pub mod teque;
