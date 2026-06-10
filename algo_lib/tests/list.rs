@@ -1,4 +1,4 @@
-use algo_lib::list::List;
+use algo_lib::collections::list::List;
 
 #[test]
 fn push_and_iter() {
