@@ -1,9 +1,9 @@
 //{"name":"Sim","group":"Kattis","url":"https://open.kattis.com/problems/sim","interactive":false,"timeLimit":1000,"tests":[{"input":"1\nmy ]]name]] is]] steva<en]<n halim]]]]]\n","output":"my name is steven halim\n"},{"input":"1\n<<hate<<<<loves[steva<en ] cs2040c< and also cs2040c\n","output":"steven loves cs2040 and also cs2040c\n"}],"testType":"single","input":{"type":"stdin","fileName":null,"pattern":null},"output":{"type":"stdout","fileName":null,"pattern":null},"languages":{"java":{"taskClass":"Sim"}}}
 
+use algo_lib::collections::list::List;
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
 use algo_lib::io::output::Writable;
-use algo_lib::list::List;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
