@@ -84,6 +84,13 @@ impl<T: Ord> MultiTreeSet<T> {
             .flat_map(|(value, count)| repeat_n(value, *count))
     }
 
+    pub fn range_rev(&self, range: impl RangeBounds<T>) -> impl Iterator<Item = &T> {
+        self.map
+            .range(range)
+            .rev()
+            .flat_map(|(value, count)| repeat_n(value, *count))
+    }
+
     pub fn first(&self) -> Option<&T> {
         self.map.iter().next().map(|(elem, _)| elem)
     }

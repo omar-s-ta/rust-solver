@@ -3,6 +3,8 @@ use std::{
     ops::Bound,
 };
 
+use crate::collections::multi_tree_set::MultiTreeSet;
+
 pub trait BoundedLookup<T> {
     type Output<'a>
     where
@@ -35,6 +37,29 @@ impl<T: Ord> BoundedLookup<T> for BTreeSet<T> {
 
     fn prev_exclusive<'a>(&'a self, elem: &T) -> Option<Self::Output<'a>> {
         self.range(..elem).next_back()
+    }
+}
+
+impl<T: Ord> BoundedLookup<T> for MultiTreeSet<T> {
+    type Output<'a>
+        = &'a T
+    where
+        Self: 'a;
+
+    fn next_inclusive<'a>(&'a self, elem: &T) -> Option<Self::Output<'a>> {
+        self.range(elem..).next()
+    }
+
+    fn next_exclusive<'a>(&'a self, elem: &T) -> Option<Self::Output<'a>> {
+        self.range((Bound::Excluded(elem), Bound::Unbounded)).next()
+    }
+
+    fn prev_inclusive<'a>(&'a self, elem: &T) -> Option<Self::Output<'a>> {
+        self.range_rev(..=elem).next()
+    }
+
+    fn prev_exclusive<'a>(&'a self, elem: &T) -> Option<Self::Output<'a>> {
+        self.range_rev(..elem).next()
     }
 }
 

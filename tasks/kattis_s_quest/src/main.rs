@@ -23,7 +23,7 @@ fn solve(input: &mut Input, out: &mut Output, _test_case: usize, _data: &mut Pre
         } else {
             let mut x = input.read_u32();
             let mut gold = 0_u64;
-            while let Some((&(e, g), _)) = set.prev_inclusive(&(x, u32::MAX)) {
+            while let Some(&(e, g)) = set.prev_inclusive(&(x, u32::MAX)) {
                 gold += g as u64;
                 x -= e;
                 set.remove(&(e, g));
