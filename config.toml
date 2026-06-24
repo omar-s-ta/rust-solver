@@ -3,7 +3,7 @@ open_task_command = [
   "new-window",
   "-n",
   "$NAME",
-  "/opt/homebrew/bin/nvim '+call cursor($LINE:$COLUMN)' '$FILE'",
+  "/opt/homebrew/bin/nvim '+call cursor($LINE,$COLUMN)' '$FILE'",
 ]
 input_file_extension = ".in"
 output_file_extension = ".ans"
