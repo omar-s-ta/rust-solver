@@ -3,6 +3,7 @@ pub mod fx_hasher;
 pub mod hash_map;
 pub mod hash_set;
 pub mod list;
+pub mod md_array;
 pub mod multi_hash_set;
 pub mod multi_tree_set;
 pub mod slice_ext;
