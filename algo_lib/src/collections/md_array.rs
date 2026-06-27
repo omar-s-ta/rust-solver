@@ -147,6 +147,10 @@ impl<T, const N: usize> MdArray<T, N> {
     /// caveats apply (wrap/truncate for narrow `T`). Mainly useful for tests and
     /// quick fixtures.
     ///
+    /// # Panics
+    ///
+    /// Panics if any dimension has length zero.
+    ///
     /// ```
     /// use algo_lib::collections::md_array::MdArray;
     ///
@@ -168,6 +172,10 @@ impl<T, const N: usize> MdArray<T, N> {
     /// Builds an array by calling `f` once per cell, in row-major order, passing
     /// the cell's multi-dimensional index.
     ///
+    /// # Panics
+    ///
+    /// Panics if any dimension has length zero.
+    ///
     /// ```
     /// use algo_lib::collections::md_array::MdArray;
     ///
@@ -178,6 +186,7 @@ impl<T, const N: usize> MdArray<T, N> {
     where
         F: FnMut([usize; N]) -> T,
     {
+        assert!(dims_len.iter().all(|&len| len > 0));
         let len = dims_len.iter().product();
         let mut data = Vec::with_capacity(len);
         let mut dims_i = [0usize; N];
@@ -463,6 +472,34 @@ impl<T> MdArray<T, 2> {
         let (lo, hi) = (r1.min(r2), r1.max(r2));
         let (head, tail) = self.data.split_at_mut(hi * cols);
         head[lo * cols..(lo + 1) * cols].swap_with_slice(&mut tail[..cols]);
+    }
+
+    /// Appends one row to the bottom of the grid, growing `rows_len()` by one.
+    ///
+    /// `iter` must yield exactly `cols_len()` elements so the grid stays
+    /// rectangular.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `iter`'s length differs from `cols_len()`; the grid is left
+    /// unchanged.
+    ///
+    /// ```
+    /// use algo_lib::collections::md_array::MdArray;
+    ///
+    /// let mut a = MdArray::<usize, 2>::iota([1, 3], 1); // [[1, 2, 3]]
+    /// a.push_row([4, 5, 6]);
+    /// assert_eq!(a.rows_len(), 2);
+    /// assert_eq!(a[1], [4, 5, 6]);
+    /// ```
+    pub fn push_row<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        let before = self.data.len();
+        self.data.extend(iter);
+        if self.data.len() - before != self.dims_len[1] {
+            self.data.truncate(before);
+            panic!("iter size is not cols");
+        }
+        self.dims_len[0] += 1;
     }
 
     /// Mirrors the grid across its horizontal mid-line (flips top↔bottom),
