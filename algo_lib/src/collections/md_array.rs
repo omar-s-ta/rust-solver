@@ -217,7 +217,10 @@ impl<T, const N: usize> MdArray<T, N> {
 
     /// Returns the indices of all elements matching `predicate`, in row-major
     /// order.
-    pub fn positions<P>(&self, mut predicate: P) -> impl DoubleEndedIterator<Item = [usize; N]>
+    pub fn positions<P>(
+        &self,
+        mut predicate: P,
+    ) -> impl DoubleEndedIterator<Item = [usize; N]> + use<'_, P, T, N>
     where
         P: FnMut(&T) -> bool,
     {
