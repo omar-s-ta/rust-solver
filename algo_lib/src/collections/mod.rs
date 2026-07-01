@@ -8,3 +8,4 @@ pub mod multi_hash_set;
 pub mod multi_tree_set;
 pub mod slice_ext;
 pub mod teque;
+pub mod vec_ext;
