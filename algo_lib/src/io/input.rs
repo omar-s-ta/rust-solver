@@ -208,14 +208,20 @@ impl Read for Input {
     }
 }
 
-macro_rules! read_signed { ($($t:ident)+) => {
+macro_rules! read_integer { ($signed: literal $($t:ident)+) => {
     $(impl Readable for $t {
         fn read(input: &mut Input) -> Self {
             input.skip_whitespace();
             let mut c = input.get().unwrap();
             let sgn = match c {
-                b'-' => { c = input.get().unwrap(); true }
-                b'+' => { c = input.get().unwrap(); false }
+                b'-' if $signed => {
+                    c = input.get().unwrap();
+                    true
+                }
+                b'+' => {
+                    c = input.get().unwrap();
+                    false
+                }
                 _ => false,
             };
             let mut res = 0;
@@ -223,37 +229,11 @@ macro_rules! read_signed { ($($t:ident)+) => {
                 assert!(c.is_ascii_digit());
                 res *= 10;
                 let d = (c - b'0') as $t;
-                if sgn { res -= d; } else { res += d; }
+                if $signed && sgn { res -= d; } else { res += d; }
                 match input.get() {
                     None => break,
-                    Some(ch) => {
-                        if ch.is_ascii_whitespace() { break; } else { c = ch; }
-                    }
-                }
-            }
-            res
-        }
-    })+
-};}
-macro_rules! read_unsigned { ($($t:ident)+) => {
-    $(impl Readable for $t {
-        fn read(input: &mut Input) -> Self {
-            input.skip_whitespace();
-            let mut c = input.get().unwrap();
-            if c == b'+' {
-                c = input.get().unwrap();
-            }
-            let mut res = 0;
-            loop {
-                assert!(c.is_ascii_digit());
-                res *= 10;
-                let d = (c - b'0') as $t;
-                res += d;
-                match input.get() {
-                    None => break,
-                    Some(ch) => {
-                        if ch.is_ascii_whitespace() { break; } else { c = ch; }
-                    }
+                    Some(ch) if ch.is_ascii_whitespace() => break,
+                    Some(ch) => c = ch,
                 }
             }
             res
@@ -268,8 +248,8 @@ macro_rules! tuple_readable { ($($name:ident)+) => {
     }
 };}
 
-read_signed!(i8 i16 i32 i64 i128 isize);
-read_unsigned!(u16 u32 u64 u128 usize);
+read_integer!(true i8 i16 i32 i64 i128 isize);
+read_integer!(false u16 u32 u64 u128 usize);
 
 tuple_readable! {T}
 tuple_readable! {T U}
