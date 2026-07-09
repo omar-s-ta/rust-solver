@@ -31,36 +31,48 @@ pub trait One {
     fn one() -> Self;
 }
 
-/// A type with an associative `+` and a [`Zero`] identity, comparable for
-/// equality.
-///
-/// This is the weakest of the addition traits: it only guarantees that values
-/// can be added and combined but not necessarily undone. The [`Eq`] bound lets
-/// generic algorithms compare against `zero()` (for example, to detect an empty
-/// contribution). It is blanket-implemented, so there is nothing to write for a
-/// concrete type beyond the underlying operator impls and [`Zero`].
-pub trait AdditionMonoid: Add<Output = Self> + AddAssign + Zero + Eq + Sized {}
+/// Declares a marker trait aliasing a set of bounds, plus a blanket impl for
+/// every type meeting them — so `$atype` becomes usable as a single `where`
+/// bound with nothing to implement by hand. Used for the addition-trait ladder
+/// below, where each level just adds one operator bound to the previous.
+macro_rules! alias_with_blanket_impl {
+    ($(#[$meta: meta])* $atype: ident: $($bound: tt)+) => {
+        $(#[$meta])*
+        pub trait $atype: $($bound)+ {}
+        impl<T: $($bound)+> $atype for T {}
+    };
+}
 
-impl<T: Add<Output = Self> + AddAssign + Zero + Eq> AdditionMonoid for T {}
+alias_with_blanket_impl!(
+    /// A type with an associative `+` and a [`Zero`] identity, comparable for
+    /// equality.
+    ///
+    /// This is the weakest of the addition traits: it only guarantees that values
+    /// can be added and combined but not necessarily undone. The [`Eq`] bound lets
+    /// generic algorithms compare against `zero()` (for example, to detect an empty
+    /// contribution). It is blanket-implemented, so there is nothing to write for a
+    /// concrete type beyond the underlying operator impls and [`Zero`].
+    AdditionMonoid: Add<Output = Self> + AddAssign + Zero + Eq + Sized
+);
 
-/// An [`AdditionMonoid`] that also supports subtraction.
-///
-/// Kept separate from [`AdditionGroup`] because subtraction and negation are
-/// distinct capabilities: unsigned integers can subtract (`Sub`/`SubAssign`)
-/// but cannot negate, so they land exactly here and no higher.
-pub trait AdditionMonoidWithSub: AdditionMonoid + Sub<Output = Self> + SubAssign {}
+alias_with_blanket_impl!(
+    /// An [`AdditionMonoid`] that also supports subtraction.
+    ///
+    /// Kept separate from [`AdditionGroup`] because subtraction and negation are
+    /// distinct capabilities: unsigned integers can subtract (`Sub`/`SubAssign`)
+    /// but cannot negate, so they land exactly here and no higher.
+    AdditionMonoidWithSub: AdditionMonoid + Sub<Output = Self> + SubAssign
+);
 
-impl<T: AdditionMonoid + Sub<Output = Self> + SubAssign> AdditionMonoidWithSub for T {}
-
-/// A full additive group: an [`AdditionMonoidWithSub`] in which every element
-/// has an additive inverse via unary [`Neg`].
-///
-/// Signed integers and modular integers satisfy this; unsigned integers do not.
-/// Require this bound when an algorithm genuinely needs negation rather than
-/// just subtraction.
-pub trait AdditionGroup: AdditionMonoidWithSub + Neg<Output = Self> {}
-
-impl<T: AdditionMonoidWithSub + Neg<Output = Self>> AdditionGroup for T {}
+alias_with_blanket_impl!(
+    /// A full additive group: an [`AdditionMonoidWithSub`] in which every element
+    /// has an additive inverse via unary [`Neg`].
+    ///
+    /// Signed integers and modular integers satisfy this; unsigned integers do not.
+    /// Require this bound when an algorithm genuinely needs negation rather than
+    /// just subtraction.
+    AdditionGroup: AdditionMonoidWithSub + Neg<Output = Self>
+);
 
 /// Implements [`Zero`] and [`One`] for each primitive integer type listed,
 /// using the literals `0` and `1`.
