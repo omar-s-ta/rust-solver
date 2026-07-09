@@ -538,21 +538,7 @@ impl<T> MdArray<T, 2> {
     /// into the result (no `Clone` required).
     pub fn rotate_clockwise(self) -> Self {
         let rows = self.dims_len[0];
-        let cols = self.dims_len[1];
-        let size = rows * cols;
-        let mut res = MaybeUninit::new(Vec::with_capacity(size));
-        unsafe {
-            (*res.as_mut_ptr()).set_len(size);
-            let ptr: *mut T = (*res.as_mut_ptr()).as_mut_ptr();
-            for (id, e) in self.into_iter().enumerate() {
-                let (i, j) = (id / cols, id % cols);
-                ptr.add(j * rows + rows - i - 1).write(e);
-            }
-            Self {
-                dims_len: [cols, rows],
-                data: res.assume_init(),
-            }
-        }
+        self.remap(|i, j| j * rows + rows - i - 1)
     }
 
     /// Returns the grid rotated 90° counter-clockwise, mapping
@@ -563,20 +549,7 @@ impl<T> MdArray<T, 2> {
     pub fn rotate_counter_clockwise(self) -> Self {
         let rows = self.dims_len[0];
         let cols = self.dims_len[1];
-        let size = rows * cols;
-        let mut res = MaybeUninit::new(Vec::with_capacity(size));
-        unsafe {
-            (*res.as_mut_ptr()).set_len(size);
-            let ptr: *mut T = (*res.as_mut_ptr()).as_mut_ptr();
-            for (id, e) in self.into_iter().enumerate() {
-                let (i, j) = (id / cols, id % cols);
-                ptr.add((cols - j - 1) * rows + i).write(e);
-            }
-            Self {
-                dims_len: [cols, rows],
-                data: res.assume_init(),
-            }
-        }
+        self.remap(|i, j| (cols - j - 1) * rows + i)
     }
 
     /// Returns the transpose, mapping `(i, j) -> (j, i)`; an `R × C` grid
@@ -597,20 +570,42 @@ impl<T> MdArray<T, 2> {
             a
         } else {
             let rows = self.dims_len[0];
-            let cols = self.dims_len[1];
-            let size = rows * cols;
-            let mut res = MaybeUninit::new(Vec::with_capacity(size));
-            unsafe {
-                (*res.as_mut_ptr()).set_len(size);
-                let ptr: *mut T = (*res.as_mut_ptr()).as_mut_ptr();
-                for (id, e) in self.into_iter().enumerate() {
-                    let (i, j) = (id / cols, id % cols);
-                    ptr.add(j * rows + i).write(e);
-                }
-                Self {
-                    dims_len: [cols, rows],
-                    data: res.assume_init(),
-                }
+            self.remap(|i, j| j * rows + i)
+        }
+    }
+
+    /// Scatters every element into a fresh `cols × rows` buffer, moving the cell
+    /// at `(i, j)` to the flat offset returned by `to(i, j)`. Shared engine
+    /// behind [`transpose`](Self::transpose),
+    /// [`rotate_clockwise`](Self::rotate_clockwise), and
+    /// [`rotate_counter_clockwise`](Self::rotate_counter_clockwise) — each just
+    /// supplies its own coordinate map.
+    ///
+    /// Consumes `self` and moves each element exactly once (no `Clone`). `to`
+    /// must be a bijection onto `0..rows * cols`: every destination offset has to
+    /// be produced exactly once, or the result buffer is left with uninitialized
+    /// or doubly-written cells.
+    ///
+    /// Uses an uninitialized buffer written through a raw pointer rather than
+    /// building the destination in order, since the mapping visits destination
+    /// offsets out of sequence. Sound because `size` cells are reserved up front,
+    /// `set_len` matches that capacity, and the bijection guarantees each is
+    /// written once before `assume_init`.
+    fn remap(self, to: impl Fn(usize, usize) -> usize) -> Self {
+        let rows = self.dims_len[0];
+        let cols = self.dims_len[1];
+        let size = rows * cols;
+        let mut res = MaybeUninit::new(Vec::with_capacity(size));
+        unsafe {
+            (*res.as_mut_ptr()).set_len(size);
+            let ptr: *mut T = (*res.as_mut_ptr()).as_mut_ptr();
+            for (id, e) in self.into_iter().enumerate() {
+                let (i, j) = (id / cols, id % cols);
+                ptr.add(to(i, j)).write(e);
+            }
+            Self {
+                dims_len: [cols, rows],
+                data: res.assume_init(),
             }
         }
     }
