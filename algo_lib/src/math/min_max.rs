@@ -8,7 +8,7 @@
 /// still making progress.
 ///
 /// ```
-/// use algo_lib::collections::min_max::MinMax;
+/// use algo_lib::math::min_max::MinMax;
 ///
 /// let mut best = 10;
 /// assert!(best.with_min(7));   // 7 < 10, so `best` becomes 7
@@ -56,7 +56,7 @@ impl<T: PartialOrd> MinMax for T {
 /// without needing a sentinel like `i64::MAX`.
 ///
 /// ```
-/// use algo_lib::collections::min_max::MinMax;
+/// use algo_lib::math::min_max::MinMax;
 ///
 /// let mut best: Option<i32> = None;
 /// assert!(best.with_max(3));  // None -> Some(3)
