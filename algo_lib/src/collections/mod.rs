@@ -1,4 +1,5 @@
 pub mod btree_ext;
+pub mod disjoint_set;
 pub mod fx_hasher;
 pub mod hash_map;
 pub mod hash_set;
