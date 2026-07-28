@@ -7,6 +7,7 @@ use std::{
 
 #[derive(Clone, Copy)]
 pub enum BoolOutput {
+    YesNoLow,
     YesNo,
     YesNoCaps,
     PossibleImpossible,
@@ -19,6 +20,7 @@ impl BoolOutput {
 
     fn yes(&self) -> &str {
         match self {
+            BoolOutput::YesNoLow => "yes",
             BoolOutput::YesNo => "Yes",
             BoolOutput::YesNoCaps => "YES",
             BoolOutput::PossibleImpossible => "Possible",
@@ -27,6 +29,7 @@ impl BoolOutput {
     }
     fn no(&self) -> &str {
         match self {
+            BoolOutput::YesNoLow => "no",
             BoolOutput::YesNo => "No",
             BoolOutput::YesNoCaps => "NO",
             BoolOutput::PossibleImpossible => "Impossible",
