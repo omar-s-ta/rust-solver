@@ -2,28 +2,63 @@ use std::cell::Cell;
 
 use crate::{collections::slice_ext::indices::Indices, math::cast::Cast};
 
+/// Disjoint-set (union-find): maintains a partition of the elements `0..n`
+/// into sets, supporting merge and same-set queries.
+///
+/// Two implementations are provided: [`CompressedDisjointSet`], which uses
+/// path compression for near-constant amortized queries, and
+/// [`RollbackDisjointSet`], which trades compression away in exchange for
+/// undoable unions (see its docs for the resulting bounds).
 pub trait DisjointSet {
+    /// Creates a partition of `n` elements, each in its own singleton set.
     fn new(n: usize) -> Self;
+
+    /// Returns the representative (root) of the set containing `i`. Two
+    /// elements are in the same set iff their representatives are equal.
     fn find(&self, i: usize) -> usize;
+
+    /// Merges the sets containing `a` and `b`, returning `false` if they were
+    /// already in the same set.
     fn union(&mut self, a: usize, b: usize) -> bool;
+
+    /// Returns the number of elements in the set containing `i`.
     fn size(&self, i: usize) -> usize;
+
+    /// Returns the number of disjoint sets.
     fn sets_count(&self) -> usize;
+
+    /// Returns the total number of elements across all sets.
     fn len(&self) -> usize;
 
+    /// Returns `true` if there are no elements.
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
+/// Disjoint-set using union by size and path halving, giving O(α(n))
+/// amortized per operation. Set sizes are stored negated in the `parent`
+/// array at root positions, so no separate size array is needed.
 #[derive(Clone)]
 pub struct CompressedDisjointSet {
     parent: Vec<Cell<i32>>,
     count: usize,
 }
 
+/// Disjoint-set (union-find) supporting rollback to previous states.
+///
+/// Unlike [`CompressedDisjointSet`], `find` performs **no path compression**:
+/// compression would mutate O(path length) parent pointers per query, and
+/// every mutation would have to be recorded to stay undoable. Instead all
+/// mutations happen in `union`, which appends a single entry to a history
+/// log, so [`rollback`](Self::rollback) can undo unions one entry at a time.
+///
+/// Union by size keeps trees at depth O(log n), giving:
+/// - `find`, `union`: O(log n)
+/// - [`rollback`](Self::rollback): O(k) to undo k unions
 pub struct RollbackDisjointSet {
     parent: Vec<usize>,
-    len: Vec<usize>,
+    size: Vec<usize>,
     count: usize,
     history: Vec<(usize, usize)>,
 }
@@ -81,6 +116,8 @@ impl DisjointSet for CompressedDisjointSet {
 }
 
 impl CompressedDisjointSet {
+    /// Returns an iterator over the representatives (roots) of all sets, in
+    /// ascending index order.
     pub fn iter(&self) -> impl Iterator<Item = usize> {
         self.parent
             .iter()
@@ -88,11 +125,17 @@ impl CompressedDisjointSet {
             .filter_map(|(i, id)| (id.get() < 0).then_some(i))
     }
 
+    /// Resets every element to its own singleton set.
     pub fn clear(&mut self) {
         self.count = self.parent.len();
         self.parent.fill(Cell::new(-1));
     }
 
+    /// Returns the current partition as a vec of sets, each holding its
+    /// member indices in ascending order. Buckets are created in
+    /// first-encounter order of their root during a `0..n` scan.
+    ///
+    /// O(n·α(n)).
     pub fn sets(&self) -> Vec<Vec<usize>> {
         let mut slot = vec![usize::MAX; self.len()];
         let mut res = Vec::<Vec<usize>>::with_capacity(self.count);
@@ -112,7 +155,7 @@ impl DisjointSet for RollbackDisjointSet {
     fn new(n: usize) -> Self {
         Self {
             parent: (0..n).collect(),
-            len: vec![1; n],
+            size: vec![1; n],
             count: n,
             history: Vec::new(),
         }
@@ -132,18 +175,18 @@ impl DisjointSet for RollbackDisjointSet {
         if a == b {
             return false;
         }
-        if self.len[a] < self.len[b] {
+        if self.size[a] < self.size[b] {
             std::mem::swap(&mut a, &mut b);
         }
         self.history.push((a, b));
         self.parent[b] = a;
-        self.len[a] += self.len[b];
+        self.size[a] += self.size[b];
         self.count -= 1;
         true
     }
 
     fn size(&self, i: usize) -> usize {
-        self.len[self.find(i)]
+        self.size[self.find(i)]
     }
 
     fn sets_count(&self) -> usize {
@@ -156,17 +199,38 @@ impl DisjointSet for RollbackDisjointSet {
 }
 
 impl RollbackDisjointSet {
+    /// Returns a checkpoint that can later be passed to
+    /// [`rollback`](Self::rollback) to undo every union made after this point.
+    ///
+    /// O(1).
     pub fn checkpoint(&self) -> usize {
         self.history.len()
     }
 
+    /// Undoes all unions made after `checkpoint` was taken, restoring the
+    /// exact partition (and set sizes) from that point. Checkpoints may be
+    /// rolled back in any order as long as the checkpoint is not ahead of
+    /// the current history; a checkpoint ahead of the history is a no-op.
+    ///
+    /// O(k) where k is the number of unions undone.
     pub fn rollback(&mut self, checkpoint: usize) {
         while self.history.len() > checkpoint {
             let (a, b) = self.history.pop().expect("bigger than checkpoint");
             self.parent[b] = b;
-            self.len[a] -= self.len[b];
+            self.size[a] -= self.size[b];
             self.count += 1;
         }
+    }
+
+    /// Resets every element to its own singleton set and clears the history.
+    /// Previously taken checkpoints become no-ops.
+    pub fn clear(&mut self) {
+        for i in self.parent.indices() {
+            self.parent[i] = i;
+            self.size[i] = 1;
+        }
+        self.count = self.parent.len();
+        self.history.clear();
     }
 }
 
