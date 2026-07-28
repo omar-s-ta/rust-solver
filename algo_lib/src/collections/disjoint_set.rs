@@ -37,8 +37,15 @@ pub trait DisjointSet {
 }
 
 /// Disjoint-set using union by size and path halving, giving O(α(n))
-/// amortized per operation. Set sizes are stored negated in the `parent`
-/// array at root positions, so no separate size array is needed.
+/// amortized per operation.
+///
+/// # Encoding
+///
+/// The `parent` array carries both roles at once, so no separate size array
+/// is needed:
+///
+/// - `parent[i] < 0` → `i` is a root, and its set holds `-parent[i]` elements.
+/// - `parent[i] >= 0` → `parent[i]` is the parent of `i`.
 #[derive(Clone)]
 pub struct CompressedDisjointSet {
     parent: Vec<Cell<i32>>,
