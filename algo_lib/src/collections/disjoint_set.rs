@@ -73,9 +73,11 @@ impl DisjointSet for CompressedDisjointSet {
 
     fn find(&self, i: usize) -> usize {
         let mut node = i;
-        while let p = self.parent[node].get()
-            && p >= 0
-        {
+        loop {
+            let p = self.parent[node].get();
+            if p < 0 {
+                return node;
+            }
             let p: usize = p.to();
             let gp = self.parent[p].get();
             if gp < 0 {
@@ -84,7 +86,6 @@ impl DisjointSet for CompressedDisjointSet {
             self.parent[node].set(gp);
             node = gp.to();
         }
-        node
     }
 
     fn union(&mut self, a: usize, b: usize) -> bool {
@@ -118,7 +119,7 @@ impl DisjointSet for CompressedDisjointSet {
 impl CompressedDisjointSet {
     /// Returns an iterator over the representatives (roots) of all sets, in
     /// ascending index order.
-    pub fn iter(&self) -> impl Iterator<Item = usize> {
+    pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.parent
             .iter()
             .enumerate()
