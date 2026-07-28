@@ -6,7 +6,7 @@ use crate::transparent_wrapper;
 use std::{
     fmt::Display,
     io::Write,
-    ops::{AddAssign, Deref, DerefMut},
+    ops::AddAssign,
     str::from_utf8_unchecked,
 };
 

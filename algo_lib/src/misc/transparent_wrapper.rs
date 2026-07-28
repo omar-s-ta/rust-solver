@@ -1,5 +1,5 @@
 /// Defines a newtype that transparently forwards to its single wrapped field
-/// via [`Deref`] and [`DerefMut`].
+/// via [`Deref`](std::ops::Deref) and [`DerefMut`](std::ops::DerefMut).
 ///
 /// This is useful for creating a distinct type (for example, to attach
 /// inherent methods or trait implementations) while still being able to call
@@ -21,15 +21,10 @@
 /// - `derive ...` — an optional comma-separated list of traits to `#[derive]`
 ///   on the generated struct.
 ///
-/// # Requirements
-///
-/// [`Deref`] and [`DerefMut`] (from `std::ops`) must be in scope at the macro
-/// call site.
-///
 /// # Examples
 ///
-/// ```ignore
-/// use std::ops::{Deref, DerefMut};
+/// ```
+/// use algo_lib::transparent_wrapper;
 ///
 /// transparent_wrapper!(Wrapper<T> = Vec<T>, derive Clone, Debug);
 ///
@@ -43,7 +38,7 @@ macro_rules! transparent_wrapper {
         $(#[derive($($d,)+)])?
         pub struct $name$(<$($par,)+>)?($t);
 
-        impl$(<$($par,)+>)? Deref for $name$(<$($par,)+>)? {
+        impl$(<$($par,)+>)? ::std::ops::Deref for $name$(<$($par,)+>)? {
             type Target = $t;
 
             fn deref(&self) -> &Self::Target {
@@ -51,7 +46,7 @@ macro_rules! transparent_wrapper {
             }
         }
 
-        impl$(<$($par,)+>)? DerefMut for $name$(<$($par,)+>)? {
+        impl$(<$($par,)+>)? ::std::ops::DerefMut for $name$(<$($par,)+>)? {
             fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.0
             }
