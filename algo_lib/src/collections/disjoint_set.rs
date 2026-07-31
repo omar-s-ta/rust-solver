@@ -46,6 +46,11 @@ pub trait DisjointSet {
 ///
 /// - `parent[i] < 0` → `i` is a root, and its set holds `-parent[i]` elements.
 /// - `parent[i] >= 0` → `parent[i]` is the parent of `i`.
+///
+/// This is not just an implementation detail:
+/// [`direct_union`](Self::direct_union) links roots without consulting the size
+/// heuristic, and [`modify_at`](Self::modify_at) writes a slot outright, so both
+/// are specified in terms of the encoding above.
 #[derive(Clone)]
 pub struct CompressedDisjointSet {
     parent: Vec<Cell<i32>>,
@@ -124,6 +129,51 @@ impl DisjointSet for CompressedDisjointSet {
 }
 
 impl CompressedDisjointSet {
+    /// Hangs the set rooted at `b` under the root `a`, skipping both the
+    /// [`find`](DisjointSet::find) lookups and the union-by-size choice that
+    /// [`union`](DisjointSet::union) makes: `a` is always the surviving root.
+    ///
+    /// Both arguments **must be roots**; `a == b` is a no-op. Nothing checks
+    /// this, and a non-root argument silently corrupts the partition — the
+    /// slot of `a` is reinterpreted as a size, and `b`'s old parent keeps
+    /// counting elements it no longer owns.
+    ///
+    /// Reach for it when the caller already holds the roots and needs to pick
+    /// which one survives, typically because it keeps per-root data of its own
+    /// (aggregates, labels, external indices) that has to be merged into that
+    /// specific slot. Giving up the size heuristic costs depth: trees are then
+    /// kept shallow by path halving in `find` alone, so a partition built only
+    /// from `direct_union` degrades to O(log n) amortized per operation rather
+    /// than O(α(n)).
+    pub fn direct_union(&mut self, a: usize, b: usize) {
+        if a == b {
+            return;
+        }
+        self.parent[a].set(self.parent[a].get() + self.parent[b].get());
+        self.parent[b].set(a.to());
+        self.count -= 1;
+    }
+
+    /// Adds `by` to the raw slot of `i`, in the
+    /// [encoding](CompressedDisjointSet#encoding) of this type — the escape
+    /// hatch for bookkeeping neither the trait methods nor
+    /// [`direct_union`](Self::direct_union) can express.
+    ///
+    /// A root's slot holds `-size`, so the sign reads backwards from the intent:
+    /// `modify_at(root, 1)` records that the set **lost** one element,
+    /// `modify_at(root, -1)` that it gained one. Given a non-root it rewrites a
+    /// parent pointer instead, which is almost never what you want.
+    ///
+    /// Nothing is validated, and nothing else moves: no element changes set,
+    /// [`sets_count`](DisjointSet::sets_count) is untouched, and the recorded
+    /// sizes are left however you leave them. The caller has to restore
+    /// consistency — typically by re-attaching the element elsewhere with
+    /// [`direct_union`](Self::direct_union), which is how a "movable" union-find
+    /// transfers an element out of a set it no longer belongs to.
+    pub fn modify_at(&mut self, i: usize, by: i32) {
+        self.parent[i].set(self.parent[i].get() + by);
+    }
+
     /// Returns an iterator over the representatives (roots) of all sets, in
     /// ascending index order.
     pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
