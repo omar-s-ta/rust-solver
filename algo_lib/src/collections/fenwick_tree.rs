@@ -67,7 +67,10 @@
 
 use std::ops::RangeBounds;
 
-use crate::{collections::slice_ext::indices::Indices, math::algebra::AdditionMonoidWithSub};
+use crate::{
+    collections::slice_ext::indices::Indices,
+    math::{algebra::AdditionMonoidWithSub, cast::Cast},
+};
 
 /// An array of values supporting point addition and range sum, each in
 /// `O(log n)`.
@@ -199,6 +202,35 @@ impl<T: AdditionMonoidWithSub + Copy + Ord> FenwickTree<T> {
     }
 }
 
+impl<T: AdditionMonoidWithSub + Copy> FenwickTree<T>
+where
+    usize: Cast<T>,
+{
+    /// A tree of `n` elements, every one of them equal to one. `O(n)`.
+    ///
+    /// Equivalent to building from `vec![T::one(); n]`, but without
+    /// materialising that vector — worth a separate constructor because the
+    /// temporary is as large as the tree itself, so a domain of `2e6` would
+    /// peak at twice the memory with both live at once.
+    ///
+    /// No walk is needed: over all-ones data, cell `i` holds nothing but the
+    /// length of its own block `[i & (i + 1), i]`, which is the lowest set bit
+    /// of `i + 1`.
+    ///
+    /// This is the entry point for algorithms that start from "every key is
+    /// present" and only ever delete — the Josephus and lucky-number families
+    /// of sieves, where the survivors fall out of repeatedly removing the
+    /// `k`-th remaining element. For a domain starting at one rather than
+    /// zero, follow with `add(0, -one)`.
+    pub fn ones(n: usize) -> Self {
+        Self {
+            ft: (0..n)
+                .map(|i| ((i + 1) & (i + 1).wrapping_neg()).to())
+                .collect(),
+        }
+    }
+}
+
 /// Inverse of the bottom-up build in `From<&[T]> for FenwickTree<T>`: the same
 /// walk into each cell's parent, run right to left and subtracting instead of
 /// adding, which restores every cell to its original element.
@@ -291,6 +323,17 @@ mod test {
         assert_eq!(ft.to_vec(), want);
         // The consuming conversion agrees, and leaves nothing behind to clone.
         assert_eq!(Vec::from(ft), want);
+    }
+
+    #[test]
+    fn ones_is_an_all_ones_array() {
+        for n in 0..=33usize {
+            let ft = FenwickTree::<i32>::ones(n);
+            assert_eq!(ft.to_vec(), vec![1; n], "ones({n})");
+            for to in 0..=n {
+                assert_eq!(ft.get_to(to), to as i32, "ones({n}).get_to({to})");
+            }
+        }
     }
 
     #[test]
