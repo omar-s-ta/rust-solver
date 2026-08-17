@@ -77,6 +77,7 @@ use crate::{
 ///
 /// See the [module documentation](self) for the cell layout and the two bit
 /// walks that drive every method.
+#[derive(Clone)]
 pub struct FenwickTree<T> {
     ft: Vec<T>,
 }
@@ -96,8 +97,8 @@ impl<T: AdditionMonoidWithSub + Copy> FenwickTree<T> {
     ///
     /// `to` is clamped to [`len`](Self::len), so `get_to(0)` is zero and any
     /// `to` at or past the end gives the total. `O(log n)`.
-    pub fn get_to(&self, to: usize) -> T {
-        let mut to = to.min(self.len()).wrapping_sub(1);
+    pub fn get_to(&self, mut to: usize) -> T {
+        to = to.min(self.len()).wrapping_sub(1);
         let mut result = T::zero();
         while let Some(v) = self.ft.get(to) {
             result += *v;
@@ -113,16 +114,7 @@ impl<T: AdditionMonoidWithSub + Copy> FenwickTree<T> {
     /// [`len`](Self::len), so out-of-range bounds saturate instead of
     /// panicking. `O(log n)`, as the difference of two prefix sums.
     pub fn get(&self, bounds: impl RangeBounds<usize>) -> T {
-        let from = match bounds.start_bound() {
-            std::ops::Bound::Included(&x) => x,
-            std::ops::Bound::Excluded(&x) => x + 1,
-            std::ops::Bound::Unbounded => 0,
-        };
-        let to = match bounds.end_bound() {
-            std::ops::Bound::Included(&x) => x.saturating_add(1),
-            std::ops::Bound::Excluded(&x) => x,
-            std::ops::Bound::Unbounded => self.len(),
-        };
+        let (from, to) = resolve_bounds(bounds, self.len());
         if from >= to {
             T::zero()
         } else {
@@ -135,8 +127,7 @@ impl<T: AdditionMonoidWithSub + Copy> FenwickTree<T> {
     ///
     /// An out-of-range `at` is ignored: the walk stops at the first cell
     /// outside the array, so adding past the end is a silent no-op.
-    pub fn add(&mut self, at: usize, value: T) {
-        let mut at = at;
+    pub fn add(&mut self, mut at: usize, value: T) {
         while let Some(v) = self.ft.get_mut(at) {
             *v += value;
             at |= at + 1;
@@ -229,6 +220,28 @@ where
                 .collect(),
         }
     }
+}
+
+/// Resolves any [`RangeBounds`] into the half-open pair `(from, to)`, taking
+/// `len` as the end of an unbounded range.
+///
+/// Shared with the 2D tree so both read a range the same way: `a..b` gives
+/// `(a, b)`, `a..=b` gives `(a, b + 1)`, and `..` gives `(0, len)`. The pair is
+/// deliberately *not* clamped — callers spot an empty range with `from >= to`
+/// and leave anything past the end to the walks, which stop at the array
+/// boundary anyway.
+pub(crate) fn resolve_bounds(bounds: impl RangeBounds<usize>, len: usize) -> (usize, usize) {
+    let from = match bounds.start_bound() {
+        std::ops::Bound::Included(&x) => x,
+        std::ops::Bound::Excluded(&x) => x + 1,
+        std::ops::Bound::Unbounded => 0,
+    };
+    let to = match bounds.end_bound() {
+        std::ops::Bound::Included(&x) => x.saturating_add(1),
+        std::ops::Bound::Excluded(&x) => x,
+        std::ops::Bound::Unbounded => len,
+    };
+    (from, to)
 }
 
 /// Inverse of the bottom-up build in `From<&[T]> for FenwickTree<T>`: the same
