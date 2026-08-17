@@ -3,12 +3,7 @@ use crate::io::{
     output::{Output, Writable},
 };
 use crate::transparent_wrapper;
-use std::{
-    fmt::Display,
-    io::Write,
-    ops::AddAssign,
-    str::from_utf8_unchecked,
-};
+use std::{fmt::Display, io::Write, ops::AddAssign, str::from_utf8_unchecked};
 
 transparent_wrapper!(Str = Vec<u8>, derive Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd);
 
