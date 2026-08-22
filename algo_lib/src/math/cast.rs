@@ -58,7 +58,12 @@ pub trait Cast<T>: Copy {
     fn to(self) -> T;
 
     /// Builds `Self` from a `T` (equivalent to `t as Self`).
-    fn from(t: T) -> Self;
+    ///
+    /// Named `of` rather than `from` on purpose: with `Cast` in scope, a method
+    /// called `from` makes every `usize::from(byte)` in the file ambiguous with
+    /// [`From::from`] (`E0034`), and the fix would be to spell out
+    /// `<usize as Cast<u8>>::from(byte)`.
+    fn of(t: T) -> Self;
 }
 
 /// Implements `Cast<$u>` for `$t` for each target type `$u`.
@@ -68,7 +73,7 @@ macro_rules! impl_cast_for_type {
             fn to(self) -> $u {
                 self as $u
             }
-            fn from(t: $u) -> Self {
+            fn of(t: $u) -> Self {
                 t as $t
             }
         })+

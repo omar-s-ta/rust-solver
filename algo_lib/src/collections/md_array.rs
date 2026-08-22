@@ -163,7 +163,7 @@ impl<T, const N: usize> MdArray<T, N> {
     {
         let mut count = init;
         Self::with_gen(dims_len, |_| {
-            let value = T::from(count);
+            let value = T::of(count);
             count += 1;
             value
         })
