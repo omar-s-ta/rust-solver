@@ -1,8 +1,7 @@
-use algo_lib::collections::fenwick_tree::FenwickTree;
-use algo_lib::math::cast::Cast;
-
+use algo_lib::collections::static_fenwick_tree::StaticFenwickTree;
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
+use algo_lib::math::cast::Cast;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
@@ -15,7 +14,7 @@ const CH_N: usize = 26;
 
 struct Node {
     next: [i32; CH_N],
-    set: [FenwickTree<i32>; 2],
+    set: [StaticFenwickTree<i32, CH_N>; 2],
     end: [bool; 2],
 }
 
@@ -23,7 +22,7 @@ impl Default for Node {
     fn default() -> Self {
         Self {
             next: [-1; CH_N],
-            set: std::array::from_fn(|_| FenwickTree::new(CH_N)),
+            set: std::array::from_fn(|_| StaticFenwickTree::default()),
             end: [false; 2],
         }
     }
