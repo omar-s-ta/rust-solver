@@ -5,6 +5,7 @@ pub mod fenwick_tree_2d;
 pub mod fx_hasher;
 pub mod hash_map;
 pub mod hash_set;
+pub mod linear_ext;
 pub mod list;
 pub mod md_array;
 pub mod multi_hash_set;
