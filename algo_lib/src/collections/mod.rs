@@ -11,5 +11,6 @@ pub mod multi_hash_set;
 pub mod multi_tree_set;
 pub mod order_stat_set;
 pub mod slice_ext;
+pub mod static_fenwick_tree;
 pub mod teque;
 pub mod vec_ext;

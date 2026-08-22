@@ -139,7 +139,9 @@ impl<T: AdditionMonoidWithSub + Copy> FenwickTree<T> {
     /// Allocates a copy of the tree; `Vec::from(tree)` reuses its storage
     /// instead. `O(n)`.
     pub fn to_vec(&self) -> Vec<T> {
-        undo_parent_walk(self.ft.clone())
+        let mut ft = self.ft.clone();
+        undo_parent_walk(&mut ft);
+        ft
     }
 
     /// Resets every element to zero, keeping the length. `O(n)`.
@@ -244,15 +246,34 @@ pub(crate) fn resolve_bounds(bounds: impl RangeBounds<usize>, len: usize) -> (us
     (from, to)
 }
 
-/// Inverse of the bottom-up build in `From<&[T]> for FenwickTree<T>`: the same
-/// walk into each cell's parent, run right to left and subtracting instead of
-/// adding, which restores every cell to its original element.
+/// Turns an array of plain elements into Fenwick cells in place, in `O(n)`.
+///
+/// Each cell starts as its own element and is folded into its parent, so one
+/// left-to-right pass leaves every cell holding its block's sum. This beats `n`
+/// calls to [`add`](FenwickTree::add), which would cost `O(n log n)`.
+///
+/// Shared with [`StaticFenwickTree`](super::static_fenwick_tree), so both trees
+/// are built by the same walk.
+pub(crate) fn build_parent_walk<T: AdditionMonoidWithSub + Copy>(ft: &mut [T]) {
+    let n = ft.len();
+    for i in ft.indices() {
+        let p = i | (i + 1);
+        if p < n {
+            let t = ft[i];
+            ft[p] += t;
+        }
+    }
+}
+
+/// Inverse of [`build_parent_walk`]: the same walk into each cell's parent, run
+/// right to left and subtracting instead of adding, which restores every cell
+/// to its original element.
 ///
 /// The reversed order is what makes this exact. A cell is only ever
 /// decremented by children at smaller indices, which are visited later, so at
 /// the moment cell `i` is read it still holds the block sum that the forward
 /// pass added to its parent — each subtraction undoes exactly one addition.
-fn undo_parent_walk<T: AdditionMonoidWithSub + Copy>(mut ft: Vec<T>) -> Vec<T> {
+pub(crate) fn undo_parent_walk<T: AdditionMonoidWithSub + Copy>(ft: &mut [T]) {
     for i in ft.indices().rev() {
         let p = i | (i + 1);
         if p < ft.len() {
@@ -260,7 +281,6 @@ fn undo_parent_walk<T: AdditionMonoidWithSub + Copy>(mut ft: Vec<T>) -> Vec<T> {
             ft[p] -= t;
         }
     }
-    ft
 }
 
 /// Recovers the original array, consuming the tree and reusing its storage.
@@ -269,7 +289,9 @@ fn undo_parent_walk<T: AdditionMonoidWithSub + Copy>(mut ft: Vec<T>) -> Vec<T> {
 /// exact inverse of building from a slice. `O(n)`.
 impl<T: AdditionMonoidWithSub + Copy> From<FenwickTree<T>> for Vec<T> {
     fn from(tree: FenwickTree<T>) -> Self {
-        undo_parent_walk(tree.ft)
+        let mut ft = tree.ft;
+        undo_parent_walk(&mut ft);
+        ft
     }
 }
 
@@ -281,16 +303,8 @@ impl<T: AdditionMonoidWithSub + Copy> From<FenwickTree<T>> for Vec<T> {
 /// [`add`](FenwickTree::add) per element, which costs `O(n log n)`.
 impl<T: AdditionMonoidWithSub + Copy> From<&[T]> for FenwickTree<T> {
     fn from(slice: &[T]) -> Self {
-        let n = slice.len();
-        let mut ft = vec![T::zero(); n];
-        for i in slice.indices() {
-            ft[i] += slice[i];
-            let p = i | (i + 1);
-            if p < n {
-                let t = ft[i];
-                ft[p] += t;
-            }
-        }
+        let mut ft = slice.to_vec();
+        build_parent_walk(&mut ft);
         Self { ft }
     }
 }
