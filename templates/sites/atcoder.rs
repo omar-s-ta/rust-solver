@@ -25,7 +25,7 @@ pub(crate) fn run(mut input: Input, mut output: Output) -> bool {
         }
         TestType::MultiEof => {
             let mut i = 1;
-            while input.peek().is_some() {
+            while !input.is_empty() {
                 solve(&mut input, &mut output, i, &mut pre_calc);
                 i += 1;
             }
