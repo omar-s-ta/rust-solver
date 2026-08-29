@@ -1,8 +1,9 @@
 use algo_lib::collections::fenwick_tree::FenwickTree;
-use algo_lib::collections::id_map::IdMap;
+use algo_lib::collections::slice_ext::sorted_ops::SortedOps;
 use algo_lib::collections::vec_ext::dedup::Dedup;
 use algo_lib::io::input::Input;
 use algo_lib::io::output::Output;
+use algo_lib::math::cast::Cast;
 use algo_lib::misc::test_type::TaskType;
 
 use algo_lib::misc::test_type::TestType;
@@ -33,43 +34,36 @@ impl Team {
 /// Solvable with a 2D fenwick tree, but it will `Memory Limit Exceed`.
 /// Map the score into compressed ids and use a 1D fenwick tree on the compressed ids.
 fn solve(input: &mut Input, out: &mut Output, _test_case: usize, state: &mut PreCalc) {
-    let n = input.read_i32();
+    let n = input.read_size();
     let m = input.read_size();
     let events = input.read_size_pair_vec(m);
 
     let offset = 1000 * m + 1;
-    let keys = events
+    let scores = events
         .iter()
-        .fold(Vec::from([0]), |mut ks, &(team, penalty)| {
+        .map(|&(team, penalty)| {
             state[team].solve_with(penalty);
-            ks.push(state[team].score(offset));
-            ks
+            state[team].score(offset)
         })
+        .collect::<Vec<_>>();
+
+    let keys = scores
+        .iter()
+        .copied()
+        .chain([0])
+        .collect::<Vec<_>>()
         .sorted_deduped();
 
-    let id = keys.into_iter().fold(IdMap::default(), |mut id_map, key| {
-        id_map.intern_owned(key);
-        id_map
-    });
+    let teams: i32 = n.to();
+    let mut set = FenwickTree::<i32>::new(keys.len());
+    let mut at = vec![0usize; n + 1];
 
-    state.fill(Team::default());
-    let mut set = FenwickTree::<i32>::new(id.len());
-    set.add(0, n);
-
-    for (team, penalty) in events {
-        id.lookup(&state[team].score(offset))
-            .into_iter()
-            .for_each(|i| set.add(i, -1));
-
-        state[team].solve_with(penalty);
-
-        id.lookup(&state[team].score(offset))
-            .into_iter()
-            .for_each(|i| set.add(i, 1));
-
-        id.lookup(&state[1].score(offset))
-            .into_iter()
-            .for_each(|one| out.print_line(1 + n - set.get_to(one + 1)));
+    set.add(0, teams);
+    for (&(team, _), score) in events.iter().zip(&scores) {
+        set.add(at[team], -1);
+        at[team] = keys.lower_bound(score);
+        set.add(at[team], 1);
+        out.print_line(1 + teams - set.get_to(at[1] + 1));
     }
 }
 
