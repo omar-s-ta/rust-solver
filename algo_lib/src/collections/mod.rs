@@ -1,4 +1,5 @@
 pub mod btree_ext;
+pub mod clamp;
 pub mod disjoint_set;
 pub mod fenwick_tree;
 pub mod fenwick_tree_2d;
