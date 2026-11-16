@@ -17,6 +17,11 @@
 //! - **Parent** drops the last bit: `i >> 1`.
 //! - **Depth** is the number of bits after the leading one: `ilog2(i)`.
 //! - **The ancestor at distance `l`** is `i >> l`.
+//! - **The nodes `l` levels below `i`** are the run `(i << l)..((i + 1) << l)`:
+//!   `i` followed by any `l` bits. Two levels below `3` are `12..16`.
+//! - **`i` is the leftmost node below its ancestor `i >> l`** exactly when its
+//!   last `l` bits are all `0`, that is, `l <= i.trailing_zeros()`. `12 = 0b1100`
+//!   is the leftmost node below `3`.
 //!
 //! ```text
 //!               1
@@ -140,10 +145,12 @@ impl HeapPoint {
         HeapPoint::new(self.get() >> 1)
     }
 
-    /// `self`, then each ancestor up to and including the root.
+    /// `self`, then each ancestor up to and including the root: `depth + 1`
+    /// points.
     ///
-    /// The usual path for bottom-up updates: change a leaf, then recompute
-    /// every node above it. Yields `depth + 1` points.
+    /// Use it to visit a leaf and every node that contains it. To recompute
+    /// the nodes above a changed leaf, use [`ancestors_up`](Self::ancestors_up)
+    /// instead, which leaves out `self`.
     pub fn self_and_ancestors(self) -> impl Iterator<Item = HeapPoint> {
         std::iter::successors(Some(self), |p| p.parent())
     }
@@ -154,9 +161,14 @@ impl HeapPoint {
     /// [`self_and_ancestors`](Self::self_and_ancestors), each step is computed
     /// directly as `i >> l` rather than from the previous one, so the iterator
     /// is double-ended and knows its length.
-    pub fn ancestors_up(self) -> impl DoubleEndedIterator<Item = HeapPoint> {
+    ///
+    /// For a whole range, see
+    /// [`HeapRange::boundary_up`](crate::collections::heap_range::HeapRange::boundary_up).
+    pub fn ancestors_up(self) -> impl DoubleEndedIterator<Item = HeapPoint> + ExactSizeIterator {
         // l <= depth = ilog2(i), so i >> l >= 1: the unwrap can not fail.
-        (1..=self.depth()).map(move |l| HeapPoint {
+        // Half-open on purpose: `RangeInclusive<u32>` is not `ExactSizeIterator`
+        // but `Range<u32>` is, and depth <= 31 so `+ 1` can not overflow.
+        (1..self.depth() + 1).map(move |l| HeapPoint {
             i: NonZeroU32::new(self.get() >> l).unwrap(),
         })
     }
@@ -165,7 +177,10 @@ impl HeapPoint {
     ///
     /// The order of [`ancestors_up`](Self::ancestors_up) reversed — the path
     /// for top-down work such as pushing lazy tags before touching a node.
-    pub fn ancestors_down(self) -> impl DoubleEndedIterator<Item = HeapPoint> {
+    ///
+    /// For a whole range, see
+    /// [`HeapRange::boundary_down`](crate::collections::heap_range::HeapRange::boundary_down).
+    pub fn ancestors_down(self) -> impl DoubleEndedIterator<Item = HeapPoint> + ExactSizeIterator {
         self.ancestors_up().rev()
     }
 

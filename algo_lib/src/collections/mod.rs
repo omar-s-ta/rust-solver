@@ -7,6 +7,7 @@ pub mod fx_hasher;
 pub mod hash_map;
 pub mod hash_set;
 pub mod heap_point;
+pub mod heap_range;
 pub mod id_map;
 pub mod linear_ext;
 pub mod list;
