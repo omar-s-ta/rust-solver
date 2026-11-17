@@ -73,7 +73,7 @@
 use std::{
     fmt::Display,
     num::NonZeroU32,
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Range},
 };
 
 use crate::io::output::Writable;
@@ -182,6 +182,40 @@ impl HeapPoint {
     /// [`HeapRange::boundary_down`](crate::collections::heap_range::HeapRange::boundary_down).
     pub fn ancestors_down(self) -> impl DoubleEndedIterator<Item = HeapPoint> + ExactSizeIterator {
         self.ancestors_up().rev()
+    }
+
+    /// The nodes at `depth` that lie under `self`, as a run of raw indices.
+    ///
+    /// ```text
+    /// depth 0:               1
+    /// depth 1:         2           3
+    /// depth 2:      4     5     6     7
+    /// depth 3:     8 9  10 11 12 13 14 15
+    ///                         +---------+
+    ///                         under 3 at depth 3: 12..16
+    /// ```
+    ///
+    /// Going down one level appends one bit to the index. Going down `l`
+    /// levels appends `l` bits: all `0`s gives the leftmost node `i << l`, and
+    /// all `1`s gives the rightmost, `((i + 1) << l) - 1`.
+    ///
+    /// ```
+    /// use algo_lib::collections::heap_point::HeapPoint;
+    ///
+    /// let three = HeapPoint::new(3).unwrap();
+    /// assert_eq!(three.descendants_at_depth(3), 12..16);
+    /// assert_eq!(three.descendants_at_depth(1), 3..4); // its own depth: just itself
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// If `depth` is above `self` or deeper than `30`. At depth `31` the end
+    /// of the run can be `2^32`, which does not fit in a `u32`.
+    pub fn descendants_at_depth(self, depth: u32) -> Range<u32> {
+        assert!(self.depth() <= depth && depth <= 30);
+        let l = depth - self.depth();
+        let p = self.get();
+        (p << l)..((p + 1) << l)
     }
 
     /// Distance from the root: `0` for the root, `floor(log2(i))` in general.
