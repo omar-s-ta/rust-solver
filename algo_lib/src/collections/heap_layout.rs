@@ -63,7 +63,9 @@
 //!   which adds `x * size` to a sum): get it from
 //!   [`node_size`](HeapLayout::node_size), not from `end - start`.
 //!   In [`CircularLayout`] a run can wrap, and then `end - start` is wrong:
-//!   for `(3, 1)` with `n = 5` the size is `3`, not `1 - 3`.
+//!   for `(3, 1)` with `n = 5` the size is `3`, not `1 - 3`. (A
+//!   [`SegmentTree`](crate::collections::segment_tree::SegmentTree) does this
+//!   for you: it passes `node_size` to the tag as `size`.)
 //!
 //! # Example
 //!
@@ -165,6 +167,15 @@ pub trait HeapLayout {
         self.len() == 0
     }
 }
+
+/// A [`HeapLayout`] in which every node is in charge of a plain run
+/// `start < end`, and its left child holds the smaller elements.
+///
+/// Marker for algorithms that walk down the tree in element order, such as
+/// a segment tree's `max_right` / `min_left`.
+pub trait InOrder: HeapLayout {}
+
+impl InOrder for InOrderLayout {}
 
 /// Reading the leaves from left to right gives elements `0, 1, 2, ...` in
 /// order.
