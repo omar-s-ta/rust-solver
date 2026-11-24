@@ -575,11 +575,11 @@ pub struct SegmentTree<M: Monoid, T: Tag<M> = NoTag, L: HeapLayout = InOrderLayo
     /// The value of every node, indexed by [`HeapPoint`]. Slot `0` is unused.
     /// Nodes `n..2n` are the leaves, one per element; nodes `1..n` combine
     /// their two children.
-    values: Vec<M::T>,
+    values: Box<[M::T]>,
     /// The note waiting on each node `1..n`, meaning "my two children have not
     /// heard of this yet". Slot `0` is unused. The node's own value already
     /// includes the note. Empty when the tag is not lazy.
-    tags: Vec<T>,
+    tags: Box<[T]>,
 }
 
 /// A tree with element `i` equal to `values[i]`. Takes `O(n)`.
@@ -611,15 +611,11 @@ impl<M: Monoid, T: Tag<M>, L: HeapLayout> SegmentTree<M, T, L> {
     /// If `n > 2^30`.
     pub fn from_fn(n: usize, mut f: impl FnMut(usize) -> M::T) -> Self {
         let layout = L::new(n);
-        let mut values = vec![M::empty(); 2 * n];
+        let mut values = vec![M::empty(); 2 * n].into_boxed_slice();
         for i in 0..n {
             values[layout.point(i)] = f(i);
         }
-        let tags = if T::LAZY {
-            vec![T::default(); n]
-        } else {
-            Vec::new()
-        };
+        let tags = vec![T::default(); n].into_boxed_slice();
         let mut tree = Self {
             layout,
             values,
